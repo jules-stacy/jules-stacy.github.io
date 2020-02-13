@@ -6,3 +6,5 @@ navbar:
       href: index.html
     - text: "Case Study 01"
       href: case_study_01.html
+    - text: "Shiny Apps for Case Study 01"
+      href: shiny_tab.html

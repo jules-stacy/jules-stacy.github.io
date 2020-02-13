@@ -291,6 +291,9 @@ $(document).ready(function () {
 <li>
   <a href="case_study_01.html">Case Study 01</a>
 </li>
+<li>
+  <a href="shiny_tab.html">Shiny Apps for Case Study 01</a>
+</li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
         
@@ -314,8 +317,9 @@ $(document).ready(function () {
 <p>All code used will be compiled and displayed in the final document. Output for certain code chunks will be hidden using the following code: #knitr::opts_chunk$set(eval = TRUE, echo = TRUE, results = “hide”)</p>
 <p>The following code loads the libraries and sets the theme for the document:</p>
 <pre class="r"><code>library(multcomp)
-library(plotly)
-library(class)
+library(plotly)</code></pre>
+<pre><code>## Warning: package &#39;plotly&#39; was built under R version 3.6.2</code></pre>
+<pre class="r"><code>library(class)
 library(caret)
 library(e1071)
 library(ggplot2)
@@ -326,8 +330,8 @@ theme_set(
   theme_minimal()
 )</code></pre>
 <p>The following code imports the dataset, sets column names, and cleans spaces out of some of the state labels</p>
-<pre class="r"><code>beer_df = read.csv(&quot;/Users/Julia/Documents/SMU/DataSci/Case Study 01/Beers.csv&quot;)
-breweries_df = read.csv(&quot;/Users/Julia/Documents/SMU/DataSci/Case Study 01/Breweries.csv&quot;)
+<pre class="r"><code>beer_df = read.csv(&quot;Beers.csv&quot;)
+breweries_df = read.csv(&quot;Breweries.csv&quot;)
 
 #data cleaning
 colnames(breweries_df) &lt;- c(&quot;Brewery_id&quot;, &quot;Brewery&quot;, &quot;City&quot;, &quot;State&quot;)
@@ -348,6 +352,11 @@ fig_1 = ggplot(data=breweries_1, ) +
        y = &quot;Count of Breweries&quot;)</code></pre>
 <pre class="r"><code>tx &lt;- tab_1
 tx[order(tx)]</code></pre>
+<pre><code>## 
+## DC ND SD WV AR DE MS NV AL KS NH NJ TN HI KY NM SC UT WY IA ID LA NE RI OK AK GA MD CT ME MO MT VT AZ MN FL OH NY 
+##  1  1  1  1  2  2  2  2  3  3  3  3  3  4  4  4  4  4  4  5  5  5  5  5  6  7  7  7  8  9  9  9 10 11 12 15 15 16 
+## VA IL NC WI IN MA WA PA TX OR MI CA CO 
+## 16 18 19 20 22 23 23 25 28 29 32 39 47</code></pre>
 <p>Table 1 is a table showing the number of breweries in each state. This includes breweries with multiple locations throughout the state.</p>
 <pre class="r"><code>fig_1 + theme(legend.position = &quot;none&quot;, axis.text.x = element_text(angle = 90, hjust = 1))</code></pre>
 <p><img src="case_study_01_files/figure-html/Figure%201-1.png" width="672" /></p>

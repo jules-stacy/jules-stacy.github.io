@@ -1,0 +1,13 @@
+name: beerdata
+title: beerdata
+username:
+account: jules-stacy
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1805011
+bundleId: 2797550
+url: https://jules-stacy.shinyapps.io/beerdata/
+when: 1581589813.19734
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: ABVhist.Rmd|IBUhist.Rmd

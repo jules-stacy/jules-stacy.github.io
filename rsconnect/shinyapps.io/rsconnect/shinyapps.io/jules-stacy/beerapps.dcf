@@ -1,0 +1,12 @@
+name: beerapps
+title: beerapps
+username:
+account: jules-stacy
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1804933
+bundleId: 2797524
+url: https://jules-stacy.shinyapps.io/beerapps/
+when: 1581588844.51078
+asMultiple: FALSE
+asStatic: FALSE

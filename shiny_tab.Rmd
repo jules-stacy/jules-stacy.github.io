@@ -1,0 +1,24 @@
+---
+title: "Shiny Apps Case Study 1"
+author: "Jules Stacy"
+date: "February 13, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# RShiny Apps  
+
+#### Original Dataset  
+For a table of the original dataset, click here:  
+https://jules-stacy.shinyapps.io/beerdata/  
+
+#### IBU Interactive Histogram  
+For an interactive histogram with beer IBU values, click here:  
+https://jules-stacy.shinyapps.io/IBU_hist/  
+
+#### ABV Interactive Histogram
+For an interactive histogram with beer ABV values, click here:  
+https://jules-stacy.shinyapps.io/ABV_hist/

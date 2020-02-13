@@ -32,13 +32,12 @@ theme_set(
 
 The following code imports the dataset, sets column names, and cleans spaces out of some of the state labels
 ```{r}
-beer_df = read.csv("/Users/Julia/Documents/SMU/DataSci/Case Study 01/Beers.csv")
-breweries_df = read.csv("/Users/Julia/Documents/SMU/DataSci/Case Study 01/Breweries.csv")
+beer_df = read.csv("Beers.csv")
+breweries_df = read.csv("Breweries.csv")
 
 #data cleaning
 colnames(breweries_df) <- c("Brewery_id", "Brewery", "City", "State")
 breweries_df$State <- str_replace_all(breweries_df$State, " ", "")
-
 ```
 
 The following code generates table 1 and figure 1.
