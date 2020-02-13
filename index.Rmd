@@ -1,12 +1,11 @@
 ---
-title: "index"
+title: "Jules Stacy's Portfolio"
 author: "Jules Stacy"
 date: "February 12, 2020"
 output: html_document
 ---
 
 
-# Jules Stacy's Portfolio
-## Data Science at SMU Online
+# From the Data Science at SMU Program Online
 
 The website can be found live at jules-stacy.github.io
