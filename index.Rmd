@@ -1,0 +1,12 @@
+---
+title: "index"
+author: "Jules Stacy"
+date: "February 12, 2020"
+output: html_document
+---
+
+
+# Jules Stacy's Portfolio
+## Data Science at SMU Online
+
+The website can be found live at jules-stacy.github.io
