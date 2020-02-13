@@ -1,3 +1,4 @@
-# jules-stacy.github.io
+# Repository for Jules Stacy's Portfolio website
+# Online Data Science Program at SMU 
 
-test test
+The website can be found live at jules-stacy.github.io
