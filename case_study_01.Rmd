@@ -15,15 +15,14 @@ All code used will be compiled and displayed in the final document. Output for c
 #knitr::opts_chunk$set(eval = TRUE, echo = TRUE, results = "hide")
 
 The following code loads the libraries and sets the theme for the document:
-```{r libraries, eval = TRUE, echo = TRUE, message=FALSE, results = "hide"}
-library(multcomp)
-library(plotly)
-library(class)
-library(caret)
-library(e1071)
-library(ggplot2)
-library(tidyverse)
-
+```{r libraries, eval = TRUE, echo = TRUE, message=FALSE, results = "hide", warning=FALSE}
+suppressPackageStartupMessages(library(multcomp))
+suppressPackageStartupMessages(library(plotly))
+suppressPackageStartupMessages(library(class))
+suppressPackageStartupMessages(library(caret))
+suppressPackageStartupMessages(library(e1071))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(tidyverse))
 
 theme_set(
   theme_minimal()

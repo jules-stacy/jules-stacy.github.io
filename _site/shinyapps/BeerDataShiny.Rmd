@@ -1,0 +1,54 @@
+---
+title: "BeerDataShiny"
+author: "Jules Stacy"
+date: "February 13, 2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r echo=FALSE}
+
+beer_df = read.csv("Beers.csv")
+
+
+
+suppressPackageStartupMessages(library(shiny))
+suppressPackageStartupMessages(library(DT))
+suppressPackageStartupMessages(library(ggplot2))  # for the diamonds dataset
+
+ui <- fluidPage(
+  title = "Case Study 01 Original Data",
+  sidebarLayout(
+    sidebarPanel(
+        'input.dataset === "Beer"',
+        checkboxGroupInput("show_vars", "Columns to show:",
+                           names(beer_df), selected = names(beer_df))
+      ),
+    mainPanel(
+      tabsetPanel(
+        id = 'dataset',
+        tabPanel("beer", DT::dataTableOutput("mytable1"))
+      )
+    )
+  )
+)
+
+
+server <- function(input, output) {
+
+  # choose columns to display
+  output$mytable1 <- DT::renderDataTable({
+    DT::datatable(beer_df[, input$show_vars, drop = FALSE], options = list(orderClasses = TRUE))
+  })
+
+}
+
+shinyApp(ui, server)
+
+
+```
