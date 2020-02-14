@@ -1,0 +1,12 @@
+name: ABVvsIBU_scatter
+title: ABVvsIBU_scatter
+username:
+account: jules-stacy
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1809996
+bundleId: 2799605
+url: https://jules-stacy.shinyapps.io/ABVvsIBU_scatter/
+when: 1581639985.03678
+asMultiple: FALSE
+asStatic: FALSE

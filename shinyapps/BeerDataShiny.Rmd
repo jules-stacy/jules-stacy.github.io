@@ -17,9 +17,9 @@ beer_df = read.csv("Beers.csv")
 
 
 
-library(shiny)
-library(DT)
-library(ggplot2)  # for the diamonds dataset
+suppressPackageStartupMessages(library(shiny))
+suppressPackageStartupMessages(library(DT))
+suppressPackageStartupMessages(library(ggplot2))  # for the diamonds dataset
 
 ui <- fluidPage(
   title = "Case Study 01 Original Data",

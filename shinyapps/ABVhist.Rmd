@@ -10,19 +10,42 @@ runtime: shiny
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r echo=FALSE}
+```{r echo=FALSE, message=FALSE}
 library(shiny)
-library(tidyverse)
+suppressPackageStartupMessages(library(tidyverse))
 
+#setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-beer_df = read.csv("Beers.csv")
+beer_df = read.csv("./Data/Beers.csv")
+
+breweries_df = read.csv("./Data/Breweries.csv")
+
+#data cleaning
+colnames(breweries_df) <- c("Brewery_id", "Brewery", "City", "State")
+breweries_df$State <- str_replace_all(breweries_df$State, " ", "")
+
+#dataset merge
+beer_df = merge(beer_df, breweries_df, by="Brewery_id")
+
+#duplicate beers were found, cleaning
+beer_df <- beer_df %>% distinct(Name, ABV, IBU, Style, Ounces, .keep_all=TRUE)
+
+#removal of NA values
 beer_df = beer_df %>% filter(!is.na(ABV))
-
 
 ui <- fluidPage(
   
   # App title ----
   titlePanel("Histogram of Beer ABV Ratings"),
+  br(),
+  fluidRow(
+    column(4,
+      hr(),
+      verbatimTextOutput('out3'),
+      selectInput('in3', 'Use Ctrl and Click to select multiple states', c("All", state.abb), multiple=TRUE, selectize=FALSE)
+    )
+  ),
+  
   
   # Sidebar layout with input and output definitions ----
   sidebarLayout(
@@ -70,16 +93,42 @@ server <- function(input, output) {
   output$plot <- renderPlot({
     
     if(input$ptype=="hist"){
+      if(is.null(input$in3)){
+        x    <- beer_df$ABV
+        bins <- seq(min(x), max(x), length.out = input$bins + 1)
     
-    x    <- beer_df$ABV
-    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+        hist(x, breaks = bins, col = "#75AADB", border = "white",
+          xlab = "ABV",
+          main = "Histogram of beer ABV ratings")
+
+      }else if(input$in3 == "All"){
+        x    <- beer_df$ABV
+        bins <- seq(min(x), max(x), length.out = input$bins + 1)
+        hist(x, breaks = bins, col = "#75AADB", border = "white",
+          xlab = "ABV",
+          main = "Histogram of beer ABV ratings")
+      }else{
+          beer_temp = beer_df %>% filter(beer_df$State %in% input$in3)
+          x    <- beer_temp$ABV
+          bins <- seq(min(x), max(x), length.out = input$bins + 1)
     
-    hist(x, breaks = bins, col = "#75AADB", border = "white",
-         xlab = "ABV",
-         main = "Histogram of beer ABV ratings")
+          hist(x, breaks = bins, col = "#75AADB", border = "white",
+          xlab = "ABV",
+          main = "Histogram of beer ABV ratings")
+      }
     }else{
-    x    <- beer_df$ABV
-    boxplot(x, main="ABV of Beers", ylab="ABV")
+      if(is.null(input$in3)){
+        x    <- beer_df$ABV
+        boxplot(x, main="ABV of Beers", ylab="ABV") 
+      } else if(input$in3 == "All") {
+        x    <- beer_df$ABV
+        boxplot(x, main="ABV of Beers", ylab="ABV")         
+      } else{
+        beer_temp = beer_df %>% filter(beer_df$State %in% input$in3)
+        x    <- beer_temp$ABV
+        boxplot(x, main="ABV of Beers", ylab="ABV")
+      }
+
       
     }
  
@@ -88,7 +137,6 @@ server <- function(input, output) {
 }
 
 shinyApp(ui, server)
-
 
 
 ```
