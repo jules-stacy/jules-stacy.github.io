@@ -10,9 +10,10 @@ runtime: shiny
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r echo=FALSE, message=FALSE}
-library(shiny)
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+suppressPackageStartupMessages(library(shiny))
 suppressPackageStartupMessages(library(tidyverse))
+
 
 #setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
@@ -80,10 +81,7 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram ----
 server <- function(input, output) {
   
-  
-  
-  # Histogram of the Old Faithful Geyser Data ----
-  # with requested number of bins
+
   # This expression that generates a histogram is wrapped in a call
   # to renderPlot to indicate that:
   #
@@ -140,3 +138,4 @@ shinyApp(ui, server)
 
 
 ```
+
