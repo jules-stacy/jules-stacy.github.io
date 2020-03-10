@@ -1,0 +1,13 @@
+name: ABV_hist
+title: ABV_hist
+username:
+account: jules-stacy
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1804995
+bundleId: 2799109
+url: https://jules-stacy.shinyapps.io/ABV_hist/
+when: 1581629179.87579
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: BeerDataShiny.Rmd|IBUhist.Rmd

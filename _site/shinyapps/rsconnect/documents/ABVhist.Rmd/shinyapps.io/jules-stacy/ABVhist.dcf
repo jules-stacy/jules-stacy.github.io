@@ -1,0 +1,12 @@
+name: ABVhist
+title: ABVhist
+username:
+account: jules-stacy
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1809679
+bundleId: 2799393
+url: https://jules-stacy.shinyapps.io/ABVhist/
+when: 1581635400.25943
+asMultiple: FALSE
+asStatic: FALSE

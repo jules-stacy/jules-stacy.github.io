@@ -1,0 +1,12 @@
+name: IBU_hist
+title: IBU_hist
+username:
+account: jules-stacy
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1805000
+bundleId: 2799626
+url: https://jules-stacy.shinyapps.io/IBU_hist/
+when: 1581640456.21442
+asMultiple: FALSE
+asStatic: FALSE
