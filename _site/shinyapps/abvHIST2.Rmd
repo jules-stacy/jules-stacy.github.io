@@ -10,13 +10,16 @@ runtime: shiny
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r echo=FALSE, message = FALSE}
-library(shiny)
-library(tidyverse)
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+suppressPackageStartupMessages(library(shiny))
+suppressPackageStartupMessages(library(tidyverse))
 
-beer_df = read.csv("~/Beers.csv")
 
-breweries_df = read.csv("Breweries.csv")
+#setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+beer_df = read.csv("./Data/Beers.csv")
+
+breweries_df = read.csv("./Data/Breweries.csv")
 
 #data cleaning
 colnames(breweries_df) <- c("Brewery_id", "Brewery", "City", "State")
@@ -78,10 +81,7 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram ----
 server <- function(input, output) {
   
-  
-  
-  # Histogram of the Old Faithful Geyser Data ----
-  # with requested number of bins
+
   # This expression that generates a histogram is wrapped in a call
   # to renderPlot to indicate that:
   #
@@ -106,7 +106,7 @@ server <- function(input, output) {
           xlab = "ABV",
           main = "Histogram of beer ABV ratings")
       }else{
-          beer_temp = beer_df %>% filter(beer_df$State == input$in3)
+          beer_temp = beer_df %>% filter(beer_df$State %in% input$in3)
           x    <- beer_temp$ABV
           bins <- seq(min(x), max(x), length.out = input$bins + 1)
     
@@ -115,8 +115,18 @@ server <- function(input, output) {
           main = "Histogram of beer ABV ratings")
       }
     }else{
-    x    <- beer_df$ABV
-    boxplot(x, main="ABV of Beers", ylab="ABV")
+      if(is.null(input$in3)){
+        x    <- beer_df$ABV
+        boxplot(x, main="ABV of Beers", ylab="ABV") 
+      } else if(input$in3 == "All") {
+        x    <- beer_df$ABV
+        boxplot(x, main="ABV of Beers", ylab="ABV")         
+      } else{
+        beer_temp = beer_df %>% filter(beer_df$State %in% input$in3)
+        x    <- beer_temp$ABV
+        boxplot(x, main="ABV of Beers", ylab="ABV")
+      }
+
       
     }
  
@@ -126,4 +136,6 @@ server <- function(input, output) {
 
 shinyApp(ui, server)
 
+
 ```
+

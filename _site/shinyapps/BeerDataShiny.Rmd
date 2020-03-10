@@ -13,13 +13,27 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r echo=FALSE}
 
-beer_df = read.csv("Beers.csv")
-
-
-
 suppressPackageStartupMessages(library(shiny))
 suppressPackageStartupMessages(library(DT))
 suppressPackageStartupMessages(library(ggplot2))  # for the diamonds dataset
+
+#setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+beer_df = read.csv("./Data/Beers.csv")
+
+breweries_df = read.csv("./Data/Breweries.csv")
+
+#data cleaning
+colnames(breweries_df) <- c("Brewery_id", "Brewery", "City", "State")
+breweries_df$State <- str_replace_all(breweries_df$State, " ", "")
+
+#dataset merge
+beer_df = merge(beer_df, breweries_df, by="Brewery_id")
+
+#duplicate beers were found, cleaning
+beer_df <- beer_df %>% distinct(Name, ABV, IBU, Style, Ounces, .keep_all=TRUE)
+
+
 
 ui <- fluidPage(
   title = "Case Study 01 Original Data",
