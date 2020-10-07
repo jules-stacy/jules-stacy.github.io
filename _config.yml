@@ -9,7 +9,7 @@ name: Jules Stacy
 description: Data Science Master Student at SMU
 
 # URL of your avatar or profile pic (you could use your GitHub profile pic)
-avatar: https://imgur.com/a/iTBEXsx
+avatar: https://i.imgur.com/E16dn01.png
 
 #
 # Flags below are optional
@@ -37,7 +37,7 @@ footer-links:
 disqus:
 
 # Enter your Google Analytics web tracking code (e.g. UA-2110908-2) to activate tracking
-google_analytics:
+google_analytics: UA-179971913-1
 
 # Your website URL (e.g. http://barryclark.github.io or http://www.barryclark.co)
 # Used for Sitemap.xml and your RSS feed
