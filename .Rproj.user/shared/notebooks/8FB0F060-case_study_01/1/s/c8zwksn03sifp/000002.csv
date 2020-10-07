@@ -1,2 +1,0 @@
-"0","abv_state <- abv_state[order(abv_state$ABV),]"
-"0","head(abv_state, 6)"

@@ -1,6 +1,0 @@
-"0","median_exNA<-function(input) {"
-"0","   median(input[which(!is.na(input))])"
-"0","}"
-"0","max_exNA<-function(input) {"
-"0","   max(input[which(!is.na(input))])"
-"0","}"

@@ -1,5 +1,0 @@
-"0","beer_df = read.csv(""/Users/Julia/Documents/SMU/DataSci/Case Study 01/Beers.csv"")"
-"0","breweries_df = read.csv(""/Users/Julia/Documents/SMU/DataSci/Case Study 01/Breweries.csv"")"
-"0","#data cleaning"
-"0","colnames(breweries_df) <- c(""Brewery_id"", ""Brewery"", ""City"", ""State"")"
-"0","breweries_df$State <- str_replace_all(breweries_df$State, "" "", """")"

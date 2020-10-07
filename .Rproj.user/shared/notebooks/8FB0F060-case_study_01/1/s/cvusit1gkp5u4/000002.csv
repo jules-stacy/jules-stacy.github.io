@@ -1,8 +1,0 @@
-"0","#code for test and train"
-"0","  classifications1 = knn(train[,c(1,2)],test[,c(1,2)],train[,3], prob = TRUE, k = 19)"
-"0","  sur1 = table(test[,3],classifications1)"
-"0","  CM1 = confusionMatrix(sur1)"
-"0","#code for leave one out"
-"0","  classifications2 = knn.cv(beer_k[,c(1,2)], beer_k[,3], prob=TRUE, k=5)"
-"0","  sur2 = table(beer_k[,3],classifications2)"
-"0","  CM2 = confusionMatrix(sur2)"

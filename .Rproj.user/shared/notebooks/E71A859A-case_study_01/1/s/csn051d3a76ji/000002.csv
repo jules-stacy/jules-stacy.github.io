@@ -1,6 +1,0 @@
-"0","knitr::opts_chunk$set(eval = TRUE, echo = TRUE, results = ""hide"")"
-"0","#perform merge"
-"0","mbeer_orig = merge(beer_df, breweries_df, by=""Brewery_id"")"
-"0","#duplicate beers were found, cleaning"
-"0","mbeer <- mbeer_orig %>% distinct(Name, ABV, IBU, Style, Ounces, .keep_all=TRUE)"
-"0","#Data was cleaned so that duplicates were removed based on name, abv, ibu, and product size in ounces"
