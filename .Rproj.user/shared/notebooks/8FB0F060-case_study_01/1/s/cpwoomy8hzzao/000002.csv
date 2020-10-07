@@ -1,0 +1,2 @@
+"0","ibu_state <- ibu_state[order(ibu_state$IBU),]"
+"0","head(ibu_state, 6)"

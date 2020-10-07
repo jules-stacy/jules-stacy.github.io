@@ -1,0 +1,3 @@
+"0","abv_max <- aggregate(ABV ~ State, mbeer, max_exNA)"
+"0","ibu_max <- aggregate(IBU ~ State, mbeer, max_exNA)"
+"0","#NA values have been removed"
