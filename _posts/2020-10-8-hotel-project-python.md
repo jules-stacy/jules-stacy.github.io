@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Hotel Cancellations: Logistic Regression
+title: Hotel Cancellations
 ---
 
 ## EDA and Graphs
