@@ -6,7 +6,7 @@ permalink: /about/
 
 ### More Information
 
-Master's in Business Administration 2015 University of Houston
+Master's in Business Administration 2015 University of Houston  
 Bachelor's in Petroleum Engineering 2013 Texas A&M University
 
 ### Contact me
