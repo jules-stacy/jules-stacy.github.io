@@ -4,12 +4,11 @@ title: About
 permalink: /about/
 ---
 
-Some information about you!
-
 ### More Information
 
-A place to include any other types of information that you'd like to include about yourself.
+Master's in Business Administration 2015 University of Houston
+Bachelor's in Petroleum Engineering 2013 Texas A&M University
 
 ### Contact me
 
-[email@domain.com](mailto:email@domain.com)
+[jules.stacy07@gmail.com](mailto:jules.stacy07@gmail.com)
