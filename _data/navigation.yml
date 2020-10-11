@@ -1,11 +1,11 @@
 # main links
 main:
   - title: "All Posts"
-    url: /index/
+    url: /site/index/
   - title: "Projects"
-    url: /projects/index/
+    url: /site/projects/index/
   - title: "Graphs"
-    url: /graphs/index/
+    url: /site/graphs/index/
   - title: "About"
     url: /about/
   # - title: "Sample Posts"
