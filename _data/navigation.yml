@@ -1,0 +1,18 @@
+# main links
+main:
+  - title: "All Posts"
+    url: /index/
+  - title: "Projects"
+    url: /projects/index/
+  - title: "Graphs"
+    url: /graphs/index/
+  - title: "About"
+    url: /about/
+  # - title: "Sample Posts"
+  #   url: /year-archive/
+  # - title: "Sample Collections"
+  #   url: /collection-archive/
+  # - title: "Sitemap"
+  #   url: /sitemap/
+  - title: "Search"
+    url: /search/

@@ -1,0 +1,9 @@
+I"+<p>Logistic Regression was used to predict whether a guest would cancel their hotel reservation.<br />
+This project was completed as part of a group of four individuals. This post will highlight portions of the project to which I was a primary contributor.</p>
+
+<h2 id="eda">EDA</h2>
+
+<p>Prior to modeling, an exploratory data analysis was performed and numerous graphs were generated.</p>
+
+<p><img src="/assets/images/hotel_adr_dist.png" alt="average daily rate distribution by hotel" title="graph of the average daily rate distribution by hotel" /></p>
+:ET
