@@ -1,0 +1,68 @@
+I"�<p>A graph of taxi tip amounts based on pickup geocoordinates, programmed in R using ggplot2, ggmap, and open street maps.</p>
+
+<p><img src="/assets/images/green_taxi.png" alt="tip amount vs pickup location new york" title="a graph of pickup locations by geocoordinates, with tip amount mapped to color scale, and overlaid on top of a map of new york city" /></p>
+
+<p>We were tasked with creating a visual that demonstrates where taxi drivers can expect to find the highest tips in New York City.</p>
+
+<p>A standalone exercise in R, this graph is composed of a scatterplot of pickup locations in geocoordinates. The color of these points is mapped to the amount received in tips, and the scatterplot is then overlaid on top of a map of New York City.</p>
+
+<p>The scatterplot was constructed in ggplot2 and ggmaps was used to plot this on top of the map, which was obtained from Open Street Maps through a package named osmdata.</p>
+
+<h2 id="code-walkthrough">Code Walkthrough</h2>
+
+<p>To recreate the graph, we will begin by importing packages used in the plotting process.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#install.packages("tidyverse")</span><span class="w">
+</span><span class="c1">#install.packages("ggplot2")</span><span class="w">
+</span><span class="c1">#install.packages("ggmap")</span><span class="w">
+</span><span class="c1">#install.packages("osmdata")</span><span class="w">
+
+</span><span class="n">library</span><span class="p">(</span><span class="s2">"ggplot2"</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="s2">"tidyverse"</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="s2">"ggmap"</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="s2">"osmdata"</span><span class="p">)</span></code></pre></figure>
+
+<p>The dataset is too large to host on github so I am unable to provide it. Let’s see exactly how large it is.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="nf">dim</span><span class="p">(</span><span class="n">df</span><span class="p">)</span></code></pre></figure>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[1] 1494926      21
+</code></pre></div></div>
+
+<p>That’s a lot of cab rides! There are 1,494,926 cab rides logged in the dataset, each with its own latitude and longitude for pickup location.</p>
+
+<p>There are just too many points to make a readable graph using my available hardware. A minimum tip amount was arbitrarily chosen in order to cut down on the number of observations to be graphed. There is a lot of statistical groundwork that was skipped for this portion, and ultimately this constrains any conclusions to be drawn from the graphic to comparisons between tip amounts greater than the cutoff.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">mintip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="w">
+</span><span class="n">df1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="w"> </span><span class="n">Tip_amount</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">mintip</span><span class="p">))</span><span class="w">
+</span><span class="nf">dim</span><span class="p">(</span><span class="n">df1</span><span class="p">)</span></code></pre></figure>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[1] 10509    21
+</code></pre></div></div>
+
+<p>It will be a lot easier to visually represent 10.5 thousand points rather than 1.5 million points.</p>
+
+<h3 id="digital-pseudo-cartography-or-making-data-rich-backgrounds-">Digital Pseudo-Cartography (or, Making Data-Rich Backgrounds) <br /></h3>
+
+<p>Now that I have the observations to be plotted, I can get the map that will serve as the background for the plot. To make it easier to zone in on the area I wish to include, I set the minimum and maximum latitude and longitude.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#grab NYC map</span><span class="w">
+</span><span class="c1">#set minimum and maximum lat and long</span><span class="w">
+</span><span class="n">minlong</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">-74.1</span><span class="w">
+</span><span class="n">maxlong</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">-73.7</span><span class="w">
+</span><span class="n">minlat</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">40.55</span><span class="w">
+</span><span class="n">maxlat</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">40.95</span></code></pre></figure>
+
+<p>Since OSM reads latitude and longitude in matrix format, the desired variables need to be converted into a matrix and the rows and columns need to be properly named.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">mapbox</span><span class="o">=</span><span class="n">matrix</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="n">minlong</span><span class="p">,</span><span class="w"> </span><span class="n">minlat</span><span class="p">,</span><span class="w"> </span><span class="n">maxlong</span><span class="p">,</span><span class="w"> </span><span class="n">maxlat</span><span class="p">),</span><span class="w"> </span><span class="n">nrow</span><span class="o">=</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="o">=</span><span class="m">2</span><span class="p">)</span><span class="w">
+</span><span class="n">rownames</span><span class="p">(</span><span class="n">mapbox</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"x"</span><span class="p">,</span><span class="s2">"y"</span><span class="p">)</span><span class="w">
+</span><span class="n">colnames</span><span class="p">(</span><span class="n">mapbox</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"min"</span><span class="p">,</span><span class="s2">"max"</span><span class="p">)</span><span class="w">
+</span><span class="n">nyc_map</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">get_map</span><span class="p">(</span><span class="n">mapbox</span><span class="p">,</span><span class="w"> </span><span class="n">maptype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"terrain"</span><span class="p">,</span><span class="w"> </span><span class="n">zoom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">11</span><span class="p">)</span></code></pre></figure>
+
+<p>And finally osmdata is called using the get_map() function. This returns a map of new york city which is stored in the variable nyc_map.</p>
+
+<h3 id="putting-it-all-together">Putting it All Together<br /></h3>
+
+<p>The final step is to construct the graph. This is done by painstakingly layering elements and adjusting aesthetics until you realize that the deadline is 20 minutes away and you finally convince yourself that the graph looks great and you won’t push your luck (but let’s be real, it could <em>always</em> look better).</p>
+:ET
