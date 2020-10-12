@@ -7,8 +7,9 @@ author_profile: true
 
 ### More Information
 
-Master's in Business Administration 2015 University of Houston  
-Bachelor's in Petroleum Engineering 2013 Texas A&M University
+Master's in Data Science, Southern Methodist University, Summer 2021
+Master's in Business Administration, University of Houston, 2015
+Bachelor's in Petroleum Engineering, Texas A&M University, 2013
 
 ### Contact me
 
