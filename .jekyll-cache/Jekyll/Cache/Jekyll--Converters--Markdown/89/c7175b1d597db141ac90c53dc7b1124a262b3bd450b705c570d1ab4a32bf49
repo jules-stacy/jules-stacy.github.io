@@ -1,0 +1,13 @@
+I"<p>Logistic and SVM pipelines were developed to predict whether a guest would cancel their hotel reservation. Coded in Python.</p>
+
+<p>This project was completed in a group of four individuals as part of a course in Machine Learning. Other aspects of the project are ongoing and use the same dataset.</p>
+
+<p>This project makes use of the scikit-learn package (sklearn) and imbalanced-learn (imblearn) to develop a pipeline that performs a logistic regression and ultimately predicts whether guests are likely to cancel their hotel reservation.</p>
+
+<h2 id="introduction">Introduction</h2>
+
+<p>A logistic model and an SVM model are constructed in order to predict whether hotel reservations will be cancelled. Data used for this project was collected from two hotels in Portugal and was preprocessed and balanced with respect to cancellations before model implementation. The most influential features are discovered, which gives some context with regard to why individuals cancel their reservations. Finally, models are optimized and compared against one another.</p>
+
+<h4 id="business-understanding">Business Understanding</h4>
+<p>The business understanding for this model is that it would be useful in allowing hotels to predict their cancellations ahead of time. This capability would allow hotels to plan accordingly with regards to booking, room service scheduling, profitability forecasting, and an overall goal of minimizing the number of people that cancel their hotel rooms. Ideally this would allow the hotels in question to be able to better capture their potential streams of revenue by minimizing factors that influence cancellations, maximizing factors that influence completed stays, and planning contingencies against guests that are forecasted to cancel their reservations.</p>
+:ET
