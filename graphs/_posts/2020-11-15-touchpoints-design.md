@@ -11,9 +11,9 @@ tags:
   - matplotlib
 ---
 
-![redesigned presentation slide]({{ https://jules-stacy.github.io/ }}/assets/images/2020-11-15-touchpoints-design/output_4_1.png "graph of the slide redesign")
-
 This graph is the result of re-designing a slide from a presentation.
+
+![redesigned presentation slide]({{ https://jules-stacy.github.io/ }}/assets/images/2020-11-15-touchpoints-design/output_4_1.png "graph of the slide redesign")
 
 As part of our visualization course we were tasked with critiquing and re-designing a slide from a presentation on customer touchpoints. This article will first show a critique of the original slide followed by the redesign. Finally, the code to generate the redesign will be shown and explained.  
 
