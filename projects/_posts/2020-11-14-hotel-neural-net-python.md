@@ -17,7 +17,7 @@ tags:
 
 A neural network pipeline was developed to predict the number of nights a guest would stay at the hotel. Coded in Python.  
 
-This project makes use of TensorFlow-GPU to build a neural network. Hyperparameters are then optimized for the network using GridSearchCV. Finally, the trained neural network is used to regress on the number of nights a given guest is expected to stay. Many thanks to Jeff Heaton from the Washington University in St. Louis. If neural networks interest you and you want to learn more, check out his Youtube page here: https://www.youtube.com/channel/UCR1-GEpyOPzT2AO4D_eifdw  
+This project makes use of TensorFlow-GPU to build a neural network. Hyperparameters are then optimized for the network using GridSearchCV. Finally, the trained neural network is used to regress on the number of nights a given guest is expected to stay. Many thanks to Jeff Heaton from the Washington University in St. Louis. If neural networks interest you and you want to learn more, [check out his Youtube page.](https://www.youtube.com/channel/UCR1-GEpyOPzT2AO4D_eifdw)  
 
 ### Imports
 
