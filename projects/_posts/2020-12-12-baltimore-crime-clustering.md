@@ -68,7 +68,7 @@ The map was first plotted on the axes and then a heatmap (or 2-dimensional histo
 
 Baltimore is divided up into 126 police posts. Crimes in the dataset included the police post they occurred in, so the point of this exercise is two-fold: to demonstrate that the clustering algorithm can re-construct Baltimore's police posts based on raw data, and to tune the hyperparameters related to the model.
 
-As the above graph shows, the clustering algorithm was able to re-create all 126 police posts. This was expected, since post is given as a clustering variable. It is worth noting, however, that this can be applied to another scenario such as clustering movies based on rating from 1 to 5.
+As the above graph shows, the clustering algorithm was able to re-create all 126 police posts. This was expected, since post is given as a clustering variable. Observe that the clusters tend to be bounded by roads, which is also how police posts are defined. Though the example is simple, is worth noting that this same method can be applied to another scenario such as clustering movies based on rating from 1 to 5.
 
 ### Modeling
 
