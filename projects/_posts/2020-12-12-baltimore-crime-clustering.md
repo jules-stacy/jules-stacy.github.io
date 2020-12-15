@@ -170,6 +170,8 @@ Clustering algorithms were run to see if Baltimore's 9 police districts could be
 
 Visually the clustering algorithm was successful in recreating Baltimore's police districts based on the police post and location data for crimes committed between 2014 and 2020.
 
+### Modeling and Visualization
+
 Modeling and visualization code was the same as above, except that the minimum number of points was set to 40 and the clustering radius was set to 10. These values had to be much bigger than the police post values because police districts cover a much larger area.
 
 ### Verify Results
@@ -413,8 +415,11 @@ Above is a graph of the same data, but laid out by latitude and longitude. As th
 
 Practical application of the model would look like this: the temperature and projected hours of sunlight for a given time and day could be plotted and clustered on the first graph (or rather, on the two dimensions represented therein); this would then determine the likely latitudes and longitudes where a crime would be committed given those weather conditions. Because of the number of significant digits given in the latitude and longitude data, likely criminal activity could be predicted to a neighborhood or even to a city block with further tuning. Adding the "Description" variable to the model could additionally allow one to predict the type of crime likely to occur.
 
+### Modeling and Visualization
+
 Modeling and visualization code is very similar to the first example. The minimum points per cluster was set to 10, and the clustering radius was set to 0.3.
 
+### Verify Results
 
 ```python
 silhouette_score(X3.sample(10000, random_state=12345), X3_w_labels['cluster_id'].sample(10000, random_state=12345), metric = 'euclidean')
