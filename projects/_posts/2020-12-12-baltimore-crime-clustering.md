@@ -13,7 +13,7 @@ tags:
 
 ---
 
-Baltimore crime data was clustered based on police districts. Data was visualized using Latitude and Longitude. Coded in Python.  
+Baltimore crime data was clustered based on police districts. Geographical data was visualized using Cartopy and Open Street Maps. Coded in Python.  
 
 This project makes use of Scikit-Learn's clustering methods in order to cluster crime data. 
 
