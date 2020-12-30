@@ -15,7 +15,16 @@ tags:
 
 These graphs were created for assignments in a visualization class.
 
-<img src="/assets/images/2-30-20-graphs/careersalary.png" width="425"/> <img src="/assets/images/2-30-20-graphs/densities.png" width="425"/>
+<img src="/assets/images/2-30-20-graphs/careersalary.png" width="500"/>
+
+<img src="/assets/images/2-30-20-graphs/densities.png" width="500"/>
 
 I will give details about each graph and then as usual I will discuss the code used to generate them.
 
+
+## Box Plots
+![Salary by Career Length]({{ https://jules-stacy.github.io/ }}/assets/images/2-30-20-graphs/careersalary.png "boxplots of salary based on years of work experience")
+
+The data for this graph was taken from the IBM HR Analytics Employee Attrition & Performance dataset located here: https://www.kaggle.com/pavansubhasht/ibm-hr-analytics-attrition-dataset
+ 
+This graph was originally going to be 
