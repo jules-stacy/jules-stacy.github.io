@@ -12,7 +12,7 @@ tags:
   - boxplot
 ---
 
-This graph was created for an assignment in a visualization class.
+This graph was created for an assignment in a data visualization class.
 
 <img src="/assets/images/2-30-20-graphs/careersalary.png"/>
 
@@ -21,7 +21,7 @@ I will give details about the graph and then as usual I will discuss the code us
 
 ## Salary by Work Experience
 
-The data for this graph was taken from the IBM HR Analytics Employee Attrition & Performance dataset located here: https://www.kaggle.com/pavansubhasht/ibm-hr-analytics-attrition-dataset
+The data for this graph was taken from the IBM HR Analytics Employee Attrition & Performance dataset located <a id="raw-url" href="https://www.kaggle.com/pavansubhasht/ibm-hr-analytics-attrition-dataset">here</a>.
  
 There are clear increases in salary amount at years 10 and 20, and the graph is designed in such a way that it highlights these salary increases.
 
@@ -76,7 +76,8 @@ ax.get_xaxis().set_visible(False)
 plt.title("Monthly Salary vs. Career Length", fontdict ={'fontsize':18})
 ```
 
-Above is the entire chunk. Below I will explain each section.
+
+#### Section Breakdown
 
 ```python
 #Initialize graph
