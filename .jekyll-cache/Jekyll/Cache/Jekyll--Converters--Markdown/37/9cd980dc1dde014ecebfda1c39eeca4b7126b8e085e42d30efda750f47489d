@@ -1,8 +1,0 @@
-I" <p>A logistic pipeline was developed to predict whether a guest would cancel their hotel reservation. Coded in Python.</p>
-
-<h2 id="introduction">Introduction</h2>
-
-<p>This project was completed as a group of four individuals for a course in Machine Learning. Coded in Python, it makes use of the scikit-learn package (sklearn) and imbalanced-learn (imblearn) to develop a pipeline that performs a logistic regression and ultimately predicts whether guests are likely to cancel their hotel reservation.</p>
-
-<p><img src="/assets/images/hotel_adr_dist.png" alt="average daily rate distribution by hotel" title="graph of the average daily rate distribution by hotel" /></p>
-:ET

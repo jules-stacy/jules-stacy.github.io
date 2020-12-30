@@ -1,0 +1,824 @@
+I"�t<p>Logistic pipelines were developed to predict whether a guest would cancel their hotel reservation. Coded in Python.</p>
+
+<p>This project makes use of the scikit-learn (sklearn) and imbalanced-learn (imblearn) packages.</p>
+
+<h4 id="business-understanding">Business Understanding</h4>
+<p>The business understanding for this model is that it would be useful in allowing hotels to predict their cancellations ahead of time. This capability would allow hotels to plan accordingly with regards to booking, room service scheduling, profitability forecasting, and an overall goal of minimizing the number of people that cancel their hotel rooms. Ideally this would allow the hotels in question to be able to better capture their potential streams of revenue by minimizing factors that influence cancellations, maximizing factors that influence completed stays, and planning contingencies against guests that are forecasted to cancel their reservations.</p>
+
+<h3 id="imports">Imports</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="n">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span><span class="p">,</span> <span class="n">classification_report</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">roc_auc_score</span> <span class="k">as</span> <span class="n">rocauc</span>
+<span class="kn">from</span> <span class="nn">sklearn.feature_selection</span> <span class="kn">import</span> <span class="n">SelectKBest</span><span class="p">,</span> <span class="n">f_classif</span>
+<span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span><span class="p">,</span> <span class="n">make_pipeline</span><span class="p">,</span> <span class="n">FeatureUnion</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">StandardScaler</span><span class="p">,</span> <span class="n">OneHotEncoder</span><span class="p">,</span> <span class="n">LabelEncoder</span><span class="p">,</span> <span class="n">LabelBinarizer</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span><span class="p">,</span> <span class="n">GridSearchCV</span>
+<span class="kn">from</span> <span class="nn">sklearn.impute</span> <span class="kn">import</span> <span class="n">SimpleImputer</span>
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LogisticRegression</span><span class="p">,</span> <span class="n">SGDClassifier</span>
+<span class="kn">from</span> <span class="nn">sklearn.svm</span> <span class="kn">import</span> <span class="n">SVC</span>
+<span class="kn">from</span> <span class="nn">sklearn.compose</span> <span class="kn">import</span> <span class="n">make_column_selector</span>
+<span class="kn">from</span> <span class="nn">sklearn.compose</span> <span class="kn">import</span> <span class="n">ColumnTransformer</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span>
+<span class="kn">from</span> <span class="nn">imblearn.under_sampling</span> <span class="kn">import</span> <span class="n">RandomUnderSampler</span>
+<span class="kn">from</span> <span class="nn">imblearn.over_sampling</span> <span class="kn">import</span> <span class="n">SMOTE</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span>
+<span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">FeatureUnion</span><span class="p">,</span> <span class="n">Pipeline</span>
+
+<span class="c1">#from scikitplot.metrics import plot_confusion_matrix # this package may not be included in base Anaconda
+</span><span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="n">sns</span>
+
+<span class="c1">#filter warnings: https://www.kite.com/python/answers/how-to-suppress-warnings-in-python
+</span><span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="p">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s">"ignore"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#class that mutes code output
+#source: https://stackoverflow.com/questions/2828953/silence-the-stdout-of-a-function-in-python-without-trashing-sys-stdout-and-resto
+</span><span class="kn">import</span> <span class="nn">sys</span><span class="p">,</span> <span class="n">traceback</span>
+<span class="k">class</span> <span class="nc">Suppressor</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="n">sys</span><span class="p">.</span><span class="n">stdout</span>
+        <span class="n">sys</span><span class="p">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span>
+    <span class="k">def</span> <span class="nf">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">traceback</span><span class="p">):</span>
+        <span class="n">sys</span><span class="p">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">stdout</span>
+        <span class="k">if</span> <span class="nb">type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+    <span class="c1"># Do normal exception handling
+</span>            <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span> <span class="k">pass</span>
+</code></pre></div></div>
+
+<p>The Suppresser class works by wrapping code in a function call which prevents the code from printing. In particular this class is useful for the confusion matrices and the grid search portions of this project, since they undesirably print lots of warnings.</p>
+
+<h2 id="data-understanding">Data Understanding</h2>
+
+<p>Additional information about the data is available here: https://www.sciencedirect.com/science/article/pii/S2352340918315191</p>
+
+<p>The data was collected from two hotels located in Portugal. It features 32 variables which include two columns detailing whether guests cancelled their reservation. The variables are a wide variety of observations about guests: whether they booked a meal, planned arrival and check-out dates, the company or agent they used when booking the hotel, the market segment and distribution channel, the room type, the number of guests and how many children they have, and many others. The data is of high-quality with relatively few missing values and a single outlier, and is particularly useful for modeling with regards to a number of predictor variables such as what type of room a guest will reserve, or whether a guest is a transient or contract guest; the point being that the data could serve a number of needs by the hotels being studied.</p>
+
+<p>The data was collected for bookings due to arrive between July 1, 2015 and August 31, 2017, and is comprised of hotel real data. As such, all identifying information about the hotels and guests is anonymized. Because the data was collected from two hotels located in Portugal, observations from modeling will only be applicable to these two hotels. Because the study is not experimental in nature, no causation can be drawn from the results; only correlation can be observed. In addressing the randomness of the sampling data, it is unknown as to whether the hotels were randomly chosen. However, the nature of the collection of the data means that hotel guests were effectively random as it could not be known to an affective scale which guests stayed at which hotels and for how long prior to data collection. In other words, the data is vast enough that any foreknowledge of individual guest stays by researchers would be nullified by the remaining unknown guests to such a degree that known guests could not have an influence on the dataset.</p>
+
+<h2 id="data-preparation">Data Preparation</h2>
+<h3 id="import-data-and-drop-outliers">Import data and drop outliers</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s">"../Data/hotel_bookings.csv"</span><span class="p">)</span>
+
+<span class="c1">#replace missing values in certain columns
+#source: https://datatofish.com/replace-nan-values-with-zeros/
+</span><span class="n">df</span><span class="p">[</span><span class="s">'children'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s">'children'</span><span class="p">].</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">df</span><span class="p">[</span><span class="s">'country'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s">'country'</span><span class="p">].</span><span class="n">fillna</span><span class="p">(</span><span class="s">"unknown"</span><span class="p">)</span>
+<span class="n">df</span><span class="p">[</span><span class="s">'agent'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s">'agent'</span><span class="p">].</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">df</span><span class="p">[</span><span class="s">'company'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s">'company'</span><span class="p">].</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># Drop outlier
+</span><span class="n">df</span><span class="p">.</span><span class="n">drop</span><span class="p">(</span><span class="n">df</span><span class="p">[</span> <span class="n">df</span><span class="p">[</span><span class="s">'adr'</span><span class="p">]</span> <span class="o">==</span> <span class="mi">5400</span> <span class="p">].</span><span class="n">index</span> <span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">df</span><span class="p">.</span><span class="n">drop</span><span class="p">([</span><span class="s">'reservation_status_date'</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1">#convert reservation_status_date to day, month, year
+#source: https://stackoverflow.com/questions/25789445/pandas-make-new-column-from-string-slice-of-another-column
+</span><span class="n">df</span><span class="p">[</span><span class="s">'reservation_status_year'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">.</span><span class="n">reservation_status_date</span><span class="p">.</span><span class="nb">str</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span>
+<span class="n">df</span><span class="p">[</span><span class="s">'reservation_status_month'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">.</span><span class="n">reservation_status_date</span><span class="p">.</span><span class="nb">str</span><span class="p">[</span><span class="mi">5</span><span class="p">:</span><span class="mi">7</span><span class="p">]</span>
+<span class="n">df</span><span class="p">[</span><span class="s">'reservation_status_day'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">.</span><span class="n">reservation_status_date</span><span class="p">.</span><span class="nb">str</span><span class="p">[</span><span class="mi">8</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span>
+
+<span class="c1">#convert categoricals to proper data type
+</span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">.</span><span class="n">astype</span><span class="p">({</span><span class="s">"agent"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"company"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"is_canceled"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> 
+                <span class="s">"hotel"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"is_repeated_guest"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span>
+                <span class="s">"reserved_room_type"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"assigned_room_type"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span>
+                <span class="s">"deposit_type"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"customer_type"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span>
+                <span class="s">"country"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> 
+                <span class="s">"arrival_date_month"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"meal"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> 
+                <span class="s">"market_segment"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">'reservation_status_year'</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span>
+                <span class="s">"distribution_channel"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">'reservation_status_month'</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span>
+                <span class="s">'reservation_status_day'</span><span class="p">:</span><span class="s">'category'</span>
+               <span class="p">})</span>
+
+<span class="c1">#set the y column to its own dataframe
+</span><span class="n">y_column</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s">'is_canceled'</span><span class="p">]</span>
+<span class="k">del</span> <span class="n">df</span><span class="p">[</span><span class="s">'is_canceled'</span><span class="p">]</span>
+<span class="k">del</span> <span class="n">df</span><span class="p">[</span><span class="s">'reservation_status_date'</span><span class="p">]</span>
+<span class="k">del</span> <span class="n">df</span><span class="p">[</span><span class="s">'reservation_status'</span><span class="p">]</span>
+</code></pre></div></div>
+
+<h4 id="data-preparation-1">Data Preparation</h4>
+<p>Data is cleaned as a pre-processing step. Missing values are filled with 0 or ‘unknown’ as appropriate</p>
+
+<ul>
+  <li>Missing values in the ‘children’ column are replaced with 0s since that is the most common.</li>
+  <li>Missing values in country are replaced with a new “unknown” value since other imputation methods are not effective here.</li>
+  <li>Missing values in the ‘agent’ column are replaced with 0 as the default agent number.</li>
+  <li>Missing values in the ‘company’ column are replaced with 0 as the default company number.</li>
+</ul>
+
+<p>An outlier for average daily rate (ADR) of 5400 is dropped, since the normal ADR usually stays under 300. The column ‘reservation_status_date’ is broken up into year, month, and day values to be more usable. The target variable, ‘is_canceled’, is defined then dropped from the full dataset. The ‘reservation_status’ column is a duplicate of the target column, so it is also dropped from the dataset as it would cause confound the models to be 100% accurate. Hotels would also not have this data prior to determining a cancellation.</p>
+
+<h5 id="one-hot-encoding">One-hot encoding</h5>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#split dataframes into categorical and integer
+#source: https://stackoverflow.com/questions/22470690/get-list-of-pandas-dataframe-columns-based-on-data-type
+</span><span class="n">df_cat</span> <span class="o">=</span> <span class="n">df</span><span class="p">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s">'category'</span><span class="p">])</span>
+<span class="n">df_int</span> <span class="o">=</span> <span class="n">df</span><span class="p">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">exclude</span><span class="o">=</span><span class="p">[</span><span class="s">'category'</span><span class="p">])</span>
+
+<span class="c1">#list factors by dtype
+</span><span class="n">cat_var_list</span> <span class="o">=</span> <span class="n">df_cat</span><span class="p">.</span><span class="n">columns</span><span class="p">.</span><span class="n">tolist</span><span class="p">()</span>
+<span class="n">int_var_list</span> <span class="o">=</span> <span class="n">df_int</span><span class="p">.</span><span class="n">columns</span><span class="p">.</span><span class="n">tolist</span><span class="p">()</span>
+
+<span class="c1">#dummy encode: https://pandas.pydata.org/docs/reference/api/pandas.get_dummies.html
+</span><span class="n">cat_enc</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">df_cat</span><span class="p">,</span> <span class="n">drop_first</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">hot_var_list</span> <span class="o">=</span> <span class="n">cat_enc</span><span class="p">.</span><span class="n">columns</span><span class="p">.</span><span class="n">tolist</span><span class="p">()</span>
+
+<span class="c1">#merge encoded and integer dataframes
+</span><span class="n">df_enc</span> <span class="o">=</span> <span class="n">cat_enc</span><span class="p">.</span><span class="n">merge</span><span class="p">(</span><span class="n">df_int</span><span class="p">,</span> <span class="n">left_index</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">enc_var_list</span> <span class="o">=</span> <span class="n">df_enc</span><span class="p">.</span><span class="n">columns</span><span class="p">.</span><span class="n">tolist</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>One-hot encoding is performed on the dataset prior to splitting it into test and train datasets. One-hot encoding will split each of the categorical columns into boolean columns for each category within the original column. This preprocessing step avoids the troubles of having to one-hot encode raw training and test sets, random under-sampled training and test sets, and SMOTE training and test sets.</p>
+
+<p>Attempts were made to include this method within the pipeline, but including this method before splitting data into training and test datasets addresses some key issues. All factor levels are encoded which prevents y_test from containing factor levels not present in X_train. And stemming from this first issue, including one hot encoding within the pipeline requires the inclusion of handle_unknown=”ignore” which prevents the use of drop=’first’.</p>
+
+<p>In summary, performing one-hot encoding as a preprocessing step allows the entire dataset to become encoded while preventing column duplication and confounding.</p>
+
+<h2 id="data-division-and-response-balancing">Data Division and Response Balancing</h2>
+<h4 id="train-and-test-splitting">Train and Test Splitting</h4>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># set the x column to its own dataframes/series
+</span><span class="n">x_columns</span> <span class="o">=</span> <span class="n">df_enc</span>
+
+<span class="c1"># train-test split with stratification on the class we are trying to predict
+</span><span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span> 
+                                    <span class="n">x_columns</span><span class="p">,</span>          <span class="c1"># x column values
+</span>                                    <span class="n">y_column</span><span class="p">,</span>           <span class="c1"># column to predict
+</span>                                    <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>      <span class="c1"># 80/20 split
+</span>                                    <span class="n">random_state</span><span class="o">=</span><span class="mi">12345</span><span class="p">,</span> <span class="c1"># random state for repeatability
+</span>                                    <span class="n">stratify</span><span class="o">=</span><span class="n">y_column</span><span class="p">)</span> <span class="c1"># stratification to preserve class imbalance 
+</span>
+
+<span class="c1">#simple_reservation_status broken out by is_canceled
+</span><span class="n">y_t</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">y_train</span><span class="p">)</span>
+<span class="n">Bar_chart</span><span class="o">=</span><span class="n">sns</span><span class="p">.</span><span class="n">countplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">y_t</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s">'is_canceled'</span><span class="p">,</span> <span class="n">hue</span><span class="o">=</span><span class="s">"is_canceled"</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="p">[</span><span class="s">'#432371'</span><span class="p">,</span><span class="s">"#FAAE7B"</span><span class="p">])</span>
+<span class="n">Bar_chart</span><span class="p">.</span><span class="n">set_xticklabels</span><span class="p">(</span><span class="n">Bar_chart</span><span class="p">.</span><span class="n">get_xticklabels</span><span class="p">())</span>
+<span class="k">with</span> <span class="n">Suppressor</span><span class="p">():</span>
+    <span class="n">plt</span><span class="p">.</span><span class="n">title</span><span class="p">(</span><span class="s">"Response Variable Ratio, Raw"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><img src="\assets\images\logistic-svm-smote\output_15_0.png" alt="png" /></p>
+
+<p>Data is split into training and test datasets using train_test_split(). The distributions of response cases is graphed above to show how the dataset contains a ratio of about 2:1 for non-cancellations to cancellations. Imbalanced data (when you have one category more represented than the other) can cause problems with model performance when bulding a classification model. This imbalance in the dataset will be addressed through both random under-sampling and over-sampling using SMOTE.</p>
+
+<h4 id="random-under-sampling">Random Under-sampling</h4>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#http://glemaitre.github.io/imbalanced-learn/generated/imblearn.under_sampling.RandomUnderSampler.html
+#perform random under-sampling and SMOTE on training dataset
+</span><span class="n">rus</span><span class="o">=</span><span class="n">RandomUnderSampler</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">12345</span><span class="p">)</span>
+<span class="n">X_rus</span><span class="p">,</span> <span class="n">y_rus</span> <span class="o">=</span> <span class="n">rus</span><span class="p">.</span><span class="n">fit_sample</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+
+
+<span class="c1">#simple_reservation_status broken out by is_canceled
+</span><span class="n">y_t</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">y_rus</span><span class="p">)</span>
+<span class="n">Bar_chart</span><span class="o">=</span><span class="n">sns</span><span class="p">.</span><span class="n">countplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">y_t</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s">'is_canceled'</span><span class="p">,</span> <span class="n">hue</span><span class="o">=</span><span class="s">"is_canceled"</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="p">[</span><span class="s">'#432371'</span><span class="p">,</span><span class="s">"#FAAE7B"</span><span class="p">])</span>
+<span class="n">Bar_chart</span><span class="p">.</span><span class="n">set_xticklabels</span><span class="p">(</span><span class="n">Bar_chart</span><span class="p">.</span><span class="n">get_xticklabels</span><span class="p">())</span>
+<span class="k">with</span> <span class="n">Suppressor</span><span class="p">():</span>
+    <span class="n">plt</span><span class="p">.</span><span class="n">title</span><span class="p">(</span><span class="s">"Response Variable Ratio, Random Under-Sampling"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><img src="\assets\images\logistic-svm-smote\output_18_0.png" alt="png" /></p>
+
+<p>Random under-sampling was performed to generate a balanced dataset with regard to the ‘is_canceled’ class we are tring to predict. This adjusts the ratio of non-cancellations to cancellations to 1:1, and adjusted the total number of responses to 70,000 from the original 91,000. Random under-sampling is understood to be an inferior method to over-sampling since it drops information from the dataset in order to balance the responses. Since our dataset is so large, this method should work fine.</p>
+
+<h4 id="smote">SMOTE</h4>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#http://glemaitre.github.io/imbalanced-learn/generated/imblearn.under_sampling.RandomUnderSampler.html
+#perform random under-sampling and SMOTE on training dataset
+</span><span class="n">sm</span><span class="o">=</span><span class="n">SMOTE</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">12345</span><span class="p">)</span>
+<span class="n">X_sm</span><span class="p">,</span> <span class="n">y_sm</span> <span class="o">=</span> <span class="n">sm</span><span class="p">.</span><span class="n">fit_sample</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+
+<span class="c1">#simple_reservation_status broken out by is_canceled
+</span><span class="n">y_t</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">y_sm</span><span class="p">)</span>
+<span class="n">Bar_chart</span><span class="o">=</span><span class="n">sns</span><span class="p">.</span><span class="n">countplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">y_t</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s">'is_canceled'</span><span class="p">,</span> <span class="n">hue</span><span class="o">=</span><span class="s">"is_canceled"</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="p">[</span><span class="s">'#432371'</span><span class="p">,</span><span class="s">"#FAAE7B"</span><span class="p">])</span>
+<span class="n">Bar_chart</span><span class="p">.</span><span class="n">set_xticklabels</span><span class="p">(</span><span class="n">Bar_chart</span><span class="p">.</span><span class="n">get_xticklabels</span><span class="p">())</span>
+<span class="k">with</span> <span class="n">Suppressor</span><span class="p">():</span>
+    <span class="n">plt</span><span class="p">.</span><span class="n">title</span><span class="p">(</span><span class="s">"Response Variable Ratio, SMOTE"</span><span class="p">)</span>
+    
+</code></pre></div></div>
+
+<p><img src="\assets\images\logistic-svm-smote\output_21_0.png" alt="png" /></p>
+
+<p>SMOTE was also run on the dataset, which resulted in a 1:1 ratio and a total training set size of 120,000. SMOTE is an SVM-based over-sampling method which generates observations by selecting existing observations with the same response and drawing a new observation somewhere on a line between those two points. In this way approximately 25,000 fake cancellation observations were generated for the training set.</p>
+
+<h2 id="modeling">Modeling</h2>
+<h3 id="logistic-regression-pipeline">Logistic Regression Pipeline</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#sklearn pipeline source: https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html
+#tutorial referenced for data preprocessing: https://www.kdnuggets.com/2020/06/simplifying-mixed-feature-type-preprocessing-scikit-learn-pipelines.html
+#tutorial referenced for column transformer: https://towardsdatascience.com/using-columntransformer-to-combine-data-processing-steps-af383f7d5260
+#tutorial referenced for standard scaler: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html
+#tutorial referenced for pipeline stuff: https://towardsdatascience.com/pipelines-custom-transformers-in-scikit-learn-the-step-by-step-guide-with-python-code-4a7d9b068156
+#more pipeline references: https://towardsdatascience.com/custom-transformers-and-ml-data-pipelines-with-python-20ea2a7adb65
+#even more pipeline references: https://towardsdatascience.com/custom-transformers-and-ml-data-pipelines-with-python-20ea2a7adb65
+#onehot encoder unknown categories error: https://www.roelpeters.be/found-unknown-categories-in-column-sklearn/
+</span>
+
+<span class="c1"># scale numeric columns and perform the logistic regression
+</span>
+<span class="n">column_transformer</span> <span class="o">=</span> <span class="n">ColumnTransformer</span><span class="p">([</span>
+    <span class="p">(</span><span class="s">"scaler"</span><span class="p">,</span> <span class="n">StandardScaler</span><span class="p">(),</span> <span class="n">int_var_list</span><span class="p">)</span> <span class="c1"># adjusts data to the same scale
+</span><span class="p">],</span> <span class="n">remainder</span><span class="o">=</span><span class="s">"passthrough"</span><span class="p">)</span>
+
+<span class="n">logistic_pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([</span>
+    <span class="p">(</span><span class="s">'datafeed'</span><span class="p">,</span> <span class="n">column_transformer</span><span class="p">),</span>              <span class="c1"># grabs finalized datasets
+</span>    <span class="p">(</span><span class="s">'selector'</span><span class="p">,</span> <span class="n">SelectKBest</span><span class="p">(</span><span class="n">f_classif</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="s">'all'</span><span class="p">)),</span> <span class="c1"># variable selection procedure
+</span>    <span class="p">(</span><span class="s">'classifier'</span><span class="p">,</span> <span class="n">LogisticRegression</span><span class="p">())</span>           <span class="c1"># Logistic modeling
+</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Above is the pipeline used for our logistic regression model. The pipeline is a series of functions that the data is passed through, cumulating in the logistic regression model. In the pipeline, numeric values are first scaled to a z-score using the StandardScaler() function. This allows us to compare the coefficients of numeric variables to each other, and more specifically their respective magnitudes of impact on the model. The remaining variables are passed through, having been previously one-hot encoded.</p>
+
+<p>A SelectKBest() function is called to specify how many features the classifier should consider for inclusion into the model. This function compares the impact of features on the model and selects the ‘k’ best features for inclusion. Finally, the logistic regression function is called which fits a model to the training data and cross-validates the model on the test data.</p>
+
+<h4 id="logistic-model-raw">Logistic Model, Raw</h4>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># fit the logistic model
+</span><span class="n">logistic_pipeline</span><span class="p">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+<span class="n">y_test_pred</span> <span class="o">=</span> <span class="n">logistic_pipeline</span><span class="p">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+
+<span class="c1"># get ROC AUC score https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html
+</span><span class="n">rocscore</span> <span class="o">=</span> <span class="n">rocauc</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">)</span>
+
+<span class="c1">#print results
+</span><span class="k">print</span><span class="p">(</span><span class="s">f'Overall Accuracy: </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="n">logistic_pipeline</span><span class="p">.</span><span class="n">score</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span><span class="si">}</span><span class="s">%'</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">f'ROC AUC Score: </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="n">rocscore</span><span class="si">}</span><span class="s">%'</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">classification_report</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">))</span>
+
+
+<span class="c1">#---------------------confusion matrix--------------------
+#source: https://medium.com/@dtuk81/confusion-matrix-visualization-fc31e3f30fea
+#source: https://stackoverflow.com/questions/33779748/set-max-value-for-color-bar-on-seaborn-heatmap
+#source: https://python-graph-gallery.com/91-customize-seaborn-heatmap/
+</span><span class="k">with</span> <span class="n">Suppressor</span><span class="p">():</span>
+    <span class="n">cf_matrix</span> <span class="o">=</span> <span class="n">confusion_matrix</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">)</span>
+    <span class="n">sns</span><span class="p">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">cf_matrix</span><span class="p">,</span> <span class="n">annot</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s">'g'</span><span class="p">,</span> 
+            <span class="n">vmin</span><span class="o">=</span><span class="mi">9999999</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">9999999</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="p">.</span><span class="mi">5</span><span class="p">,</span>
+                  <span class="n">cbar</span><span class="o">=</span><span class="bp">False</span><span class="p">).</span><span class="nb">set</span><span class="p">(</span>
+        <span class="n">title</span><span class="o">=</span><span class="s">"Confusion Matrix, Logistic Regression, Raw"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Overall Accuracy: 92.02194488650642%
+ROC AUC Score: 89.94556088156838%
+              precision    recall  f1-score   support
+
+           0       0.90      0.98      0.94     15033
+           1       0.96      0.82      0.88      8845
+
+    accuracy                           0.92     23878
+   macro avg       0.93      0.90      0.91     23878
+weighted avg       0.92      0.92      0.92     23878
+</code></pre></div></div>
+
+<p><img src="\assets\images\logistic-svm-smote\output_27_1.png" alt="png" /></p>
+
+<p>Above are the results for the logistic regression function using raw data. Numeric results are shown above a confusion matrix, including overall accuracy, an ROC area under the curve score, precisions, recalls, and f1-scores. These metrics can be used to compare to other models to determine which model performed the best.</p>
+
+<p>Findings:</p>
+<ul>
+  <li>The overall accuracy for this preliminary model was impressive at 92%, meaning our model can correctly predict whether a reservation is or is not cancelled 92% of the time!</li>
+  <li>The ROC AUC score was 89.95%, meaning that our model is much better than randomly guessing (AUC = 50%) if a reservation is cancelled.</li>
+  <li>Recall for true negatives (successful check-outs) was 98%, so we have very few instances where there is not a cancellation and the model predicts that there will not be a cancellation.</li>
+</ul>
+
+<p>Future adjustments:
+This model used all 975 features in the dataset, which may not be desireable and could lead to overfitting. This model predicted non-cancellations better than cancellations, so parameter tuning will include class weights in an attempt to balance these numbers. The parameters used for this model were:</p>
+<ul>
+  <li>solver: lbfgs</li>
+  <li>k=975 (all)</li>
+  <li>class weight false/true ratio of 1:1</li>
+</ul>
+
+<h4 id="logistic-model-random-under-sampling">Logistic Model, Random Under-Sampling</h4>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># fit the logistic model
+</span><span class="n">logistic_pipeline</span><span class="p">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_rus</span><span class="p">,</span> <span class="n">y_rus</span><span class="p">)</span>
+<span class="n">y_test_pred</span> <span class="o">=</span> <span class="n">logistic_pipeline</span><span class="p">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+
+<span class="c1">#get ROC AUC score https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html
+</span><span class="n">rocscore</span> <span class="o">=</span> <span class="n">rocauc</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">)</span>
+
+<span class="c1">#print results
+</span><span class="k">print</span><span class="p">(</span><span class="s">f'Overall Accuracy: </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="n">logistic_pipeline</span><span class="p">.</span><span class="n">score</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span><span class="si">}</span><span class="s">%'</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">f'ROC AUC Score: </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="n">rocscore</span><span class="si">}</span><span class="s">%'</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">classification_report</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">))</span>
+
+
+<span class="c1">#---------------------confusion matrix--------------------
+#source: https://medium.com/@dtuk81/confusion-matrix-visualization-fc31e3f30fea
+#source: https://stackoverflow.com/questions/33779748/set-max-value-for-color-bar-on-seaborn-heatmap
+#source: https://python-graph-gallery.com/91-customize-seaborn-heatmap/
+</span><span class="k">with</span> <span class="n">Suppressor</span><span class="p">():</span>
+    <span class="n">cf_matrix</span> <span class="o">=</span> <span class="n">confusion_matrix</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">)</span>
+    <span class="n">sns</span><span class="p">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">cf_matrix</span><span class="p">,</span> <span class="n">annot</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s">'g'</span><span class="p">,</span> 
+            <span class="n">vmin</span><span class="o">=</span><span class="mi">9999999</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">9999999</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="p">.</span><span class="mi">5</span><span class="p">,</span>
+                  <span class="n">cbar</span><span class="o">=</span><span class="bp">False</span><span class="p">).</span><span class="nb">set</span><span class="p">(</span>
+        <span class="n">title</span><span class="o">=</span><span class="s">"Confusion Matrix, Logistic Regression, Random Under-Sampling"</span><span class="p">)</span>
+
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Overall Accuracy: 91.657592763213%
+ROC AUC Score: 90.67770445250335%
+              precision    recall  f1-score   support
+
+           0       0.92      0.94      0.93     15033
+           1       0.90      0.87      0.89      8845
+
+    accuracy                           0.92     23878
+   macro avg       0.91      0.91      0.91     23878
+weighted avg       0.92      0.92      0.92     23878
+</code></pre></div></div>
+
+<p><img src="\assets\images\logistic-svm-smote\output_30_1.png" alt="png" /></p>
+
+<p>Above is the random under-sampling model using unoptimized parameters and the randomly under-sampled training set. Results from this model will be compared with the raw and SMOTE models in the next discussion cell, as it will be more straightforward to compare results from the three models in a side-by-side fashion.</p>
+
+<h4 id="logistic-model-smote">Logistic Model, SMOTE</h4>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># fit the logistic model
+</span><span class="n">logistic_pipeline</span><span class="p">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_sm</span><span class="p">,</span> <span class="n">y_sm</span><span class="p">)</span>
+<span class="n">y_test_pred</span> <span class="o">=</span> <span class="n">logistic_pipeline</span><span class="p">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+
+<span class="c1">#get ROC AUC score https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html
+</span><span class="n">rocscore</span> <span class="o">=</span> <span class="n">rocauc</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">)</span>
+
+<span class="c1">#print results
+</span><span class="k">print</span><span class="p">(</span><span class="s">f'Overall Accuracy: </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="n">logistic_pipeline</span><span class="p">.</span><span class="n">score</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span><span class="si">}</span><span class="s">%'</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">f'ROC AUC Score: </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="n">rocscore</span><span class="si">}</span><span class="s">%'</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">classification_report</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">))</span>
+
+
+<span class="c1">#---------------------confusion matrix--------------------
+#source: https://medium.com/@dtuk81/confusion-matrix-visualization-fc31e3f30fea
+#source: https://stackoverflow.com/questions/33779748/set-max-value-for-color-bar-on-seaborn-heatmap
+#source: https://python-graph-gallery.com/91-customize-seaborn-heatmap/
+</span><span class="k">with</span> <span class="n">Suppressor</span><span class="p">():</span>
+    <span class="n">cf_matrix</span> <span class="o">=</span> <span class="n">confusion_matrix</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">)</span>
+    <span class="n">sns</span><span class="p">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">cf_matrix</span><span class="p">,</span> <span class="n">annot</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s">'g'</span><span class="p">,</span> 
+            <span class="n">vmin</span><span class="o">=</span><span class="mi">9999999</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">9999999</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="p">.</span><span class="mi">5</span><span class="p">,</span>
+                  <span class="n">cbar</span><span class="o">=</span><span class="bp">False</span><span class="p">).</span><span class="nb">set</span><span class="p">(</span>
+        <span class="n">title</span><span class="o">=</span><span class="s">"Confusion Matrix, Logistic Regression, SMOTE"</span><span class="p">)</span>
+
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Overall Accuracy: 92.16014741603149%
+ROC AUC Score: 90.46717985459311%
+              precision    recall  f1-score   support
+
+           0       0.91      0.97      0.94     15033
+           1       0.94      0.84      0.89      8845
+
+    accuracy                           0.92     23878
+   macro avg       0.93      0.90      0.91     23878
+weighted avg       0.92      0.92      0.92     23878
+</code></pre></div></div>
+
+<p><img src="\assets\images\logistic-svm-smote\output_33_1.png" alt="png" /></p>
+
+<p>Above are the results from a model using unoptimized parameters and a SMOTE training set. The results of this model are shown below alongside the results from the other unoptimized models. The SMOTE model obtained the highest overall accuracy and the under-sampled model obtained the highest ROC AUC score. Weighted averages for precision, recall, and f1-score were the same for all models. Any of these models would be viable out of the box for cancellation prediction.</p>
+
+<hr />
+<p>Unoptimized Raw:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Overall Accuracy: 92.02194488650642%
+
+ROC AUC Score: 89.94556088156838%
+
+              precision    recall  f1-score   support
+
+           0       0.90      0.98      0.94     15033
+           1       0.96      0.82      0.88      8845
+
+    accuracy                           0.92     23878
+   macro avg       0.93      0.90      0.91     23878
+weighted avg       0.92      0.92      0.92     23878 --------------------------- Unoptimized Under-Sampled:
+
+Overall Accuracy: 91.657592763213%
+
+ROC AUC Score: 90.67770445250335%
+
+              precision    recall  f1-score   support
+
+           0       0.92      0.94      0.93     15033
+           1       0.90      0.87      0.89      8845
+
+    accuracy                           0.92     23878
+   macro avg       0.91      0.91      0.91     23878
+weighted avg       0.92      0.92      0.92     23878 --------------------------- Unoptimized SMOTE:
+
+Overall Accuracy: 92.16014741603149%
+
+ROC AUC Score: 90.46717985459311%
+
+              precision    recall  f1-score   support
+
+           0       0.91      0.97      0.94     15033
+           1       0.94      0.84      0.89      8845
+
+    accuracy                           0.92     23878
+   macro avg       0.93      0.90      0.91     23878
+weighted avg       0.92      0.92      0.92     23878
+</code></pre></div></div>
+
+<h3 id="hyperparameter-optimization-using-grid-search">Hyperparameter optimization using Grid Search</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># # defining parameter range 
+# param_grid = {'classifier__class_weight': [{False:0.9, True:1}, {False:0.95, True:1}, {False:0.85, True:1}], 
+#               'classifier__solver': ['liblinear', 'lbfgs'],
+#               'selector__k': list(range(922,975,1))
+#               }  
+</span>  
+<span class="c1"># grid = GridSearchCV(logistic_pipeline, param_grid, refit = True, verbose = 3) 
+</span>  
+<span class="c1"># # fitting the model for grid search 
+# grid.fit(X_train, y_train)
+</span>    
+<span class="c1"># print(grid.best_estimator_)
+</span></code></pre></div></div>
+
+<p>If the above code is commented out, that is because it takes a very long time to run and we did it to be able to compile the entire notebook in order.</p>
+
+<p>A grid search function was performed using the logistic pipeline in order to optimize model parameters. Grid searches operate by generating a model for each possible combination of the specified hyperparameters, then selecting the best performing model. The parameters that were tuned using this method were the solver method, the true/false weights, and the number of features k. The output of the grid search was minimized; to see it click the elipses above. Possible values for these variables were as such:</p>
+
+<ul>
+  <li>solver method: liblinear, lbfgs, or saga. liblinear consistently outperformed the other methods.</li>
+  <li>class weights: false/true ratios of 1:1, 0.9:1, 0.8:1, and later, 0.95:1 and 0.85:1</li>
+  <li>k: a range from 300 to 975 features were tested in varying steps. The final grid search ranged from 922 to 975 in steps of 1.</li>
+</ul>
+
+<p>The grid search was run iteratively to determine which of these parameters provided the best fit from the model. Parameters of solver=liblinear, k=922, and a weight ratio of 0.9:1 scored the best with the grid search. The grid search optimized the model over a number of metrics, and this will be relevant during analysis of the adjusted linear model. Also shown below are the results of some of the grid searches run for this model, in chronological order.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>            ('selector', SelectKBest(k=460)),
+            ('classifier',
+             LogisticRegression(class_weight={False: 1, True: 1},
+                                solver='liblinear'))])
+                                
+                                
+            ('selector', SelectKBest(k=550)),
+            ('classifier',
+             LogisticRegression(class_weight={False: 1, True: 1},
+                                solver='liblinear'))])
+                                
+            ('selector', SelectKBest(k=925)),
+            ('classifier',
+             LogisticRegression(class_weight={False: 0.9, True: 1},
+                                solver='liblinear'))])            
+                                
+            ('selector', SelectKBest(k=922)),
+            ('classifier',
+             LogisticRegression(class_weight={False: 0.9, True: 1},
+                                solver='liblinear'))])            
+
+
+            ('selector', SelectKBest(k=922)),
+            ('classifier',
+             LogisticRegression(class_weight={False: 0.9, True: 1},
+                                solver='liblinear'))])
+</code></pre></div></div>
+
+<h3 id="raw-logistic-model-optimized">Raw Logistic Model, Optimized</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#source: https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html
+#source: https://www.kdnuggets.com/2020/06/simplifying-mixed-feature-type-preprocessing-scikit-learn-pipelines.html
+#column transformer: https://towardsdatascience.com/using-columntransformer-to-combine-data-processing-steps-af383f7d5260
+#standard scaler: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html
+#pipeline stuff: https://towardsdatascience.com/pipelines-custom-transformers-in-scikit-learn-the-step-by-step-guide-with-python-code-4a7d9b068156
+#more pipeline stuff: https://towardsdatascience.com/custom-transformers-and-ml-data-pipelines-with-python-20ea2a7adb65
+#even more pipeline stuff: https://towardsdatascience.com/custom-transformers-and-ml-data-pipelines-with-python-20ea2a7adb65
+#onehot encoder unknown categories error: https://www.roelpeters.be/found-unknown-categories-in-column-sklearn/
+</span>
+<span class="c1">#scale numerics and perform the logistic regression
+</span>
+<span class="n">column_transformer</span> <span class="o">=</span> <span class="n">ColumnTransformer</span><span class="p">([</span>
+    <span class="p">(</span><span class="s">"scaler"</span><span class="p">,</span> <span class="n">StandardScaler</span><span class="p">(),</span> <span class="n">int_var_list</span><span class="p">)</span>
+<span class="c1">#    ("standardizer", custom_scaler(int_var_list), int_var_list)
+</span><span class="p">],</span> <span class="n">remainder</span><span class="o">=</span><span class="s">"passthrough"</span><span class="p">)</span>
+
+<span class="n">logistic_pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([</span>
+    <span class="p">(</span><span class="s">'datafeed'</span><span class="p">,</span> <span class="n">column_transformer</span><span class="p">),</span> <span class="c1">#grabs finalized datasets
+</span>    <span class="p">(</span><span class="s">'selector'</span><span class="p">,</span> <span class="n">SelectKBest</span><span class="p">(</span><span class="n">f_classif</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">922</span><span class="p">)),</span>   <span class="c1"># selection procedure
+</span>    <span class="p">(</span><span class="s">'classifier'</span><span class="p">,</span> <span class="n">LogisticRegression</span><span class="p">(</span><span class="n">solver</span><span class="o">=</span><span class="s">'liblinear'</span><span class="p">,</span> <span class="n">class_weight</span><span class="o">=</span><span class="p">{</span><span class="bp">False</span><span class="p">:</span><span class="mf">0.9</span><span class="p">,</span> <span class="bp">True</span><span class="p">:</span><span class="mi">1</span><span class="p">}))</span> <span class="c1">#class_weight={False:0.1, True:1}) # Logistic modeling using class weights for our imbalanced dataset
+</span><span class="p">])</span>
+
+
+<span class="c1"># fit the logistic model
+</span><span class="n">logistic_pipeline</span><span class="p">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+<span class="n">y_test_pred</span> <span class="o">=</span> <span class="n">logistic_pipeline</span><span class="p">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+
+<span class="c1">#get ROC AUC score https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html
+</span><span class="n">rocscore</span> <span class="o">=</span> <span class="n">rocauc</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">)</span>
+
+<span class="c1">#print results
+</span><span class="k">print</span><span class="p">(</span><span class="s">f'Overall Accuracy: </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="n">logistic_pipeline</span><span class="p">.</span><span class="n">score</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span><span class="si">}</span><span class="s">%'</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">f'ROC AUC Score: </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="n">rocscore</span><span class="si">}</span><span class="s">%'</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">classification_report</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">))</span>
+
+
+
+
+<span class="c1">#---------------------confusion matrix--------------------
+#source: https://medium.com/@dtuk81/confusion-matrix-visualization-fc31e3f30fea
+#source: https://stackoverflow.com/questions/33779748/set-max-value-for-color-bar-on-seaborn-heatmap
+#source: https://python-graph-gallery.com/91-customize-seaborn-heatmap/
+</span><span class="k">with</span> <span class="n">Suppressor</span><span class="p">():</span>
+    <span class="n">cf_matrix</span> <span class="o">=</span> <span class="n">confusion_matrix</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">)</span>
+    <span class="n">sns</span><span class="p">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">cf_matrix</span><span class="p">,</span> <span class="n">annot</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s">'g'</span><span class="p">,</span> 
+            <span class="n">vmin</span><span class="o">=</span><span class="mi">9999999</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">9999999</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="p">.</span><span class="mi">5</span><span class="p">,</span>
+                  <span class="n">cbar</span><span class="o">=</span><span class="bp">False</span><span class="p">).</span><span class="nb">set</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s">"Confusion Matrix, Logistic Regression, Raw"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Overall Accuracy: 91.74553982745624%
+ROC AUC Score: 89.84471547182594%
+              precision    recall  f1-score   support
+
+           0       0.90      0.97      0.94     15033
+           1       0.95      0.83      0.88      8845
+
+    accuracy                           0.92     23878
+   macro avg       0.92      0.90      0.91     23878
+weighted avg       0.92      0.92      0.92     23878
+</code></pre></div></div>
+
+<p><img src="\assets\images\logistic-svm-smote\output_39_1.png" alt="png" /></p>
+
+<p>Parameters chosen by grid search were implemented in the model and the results are shown above. Results from both tests are also shown below to make comparison easier. The optimized model resulted in only slightly adjusted numbers; primarily, the parameters resulted in a slight detriment to precision in favor of a slight boost to recall when predicting cancellations, resulting in a precision that dropped from 0.96 to 0.95, and a recall that rose from 0.82 to 0.83. This resulted in an overall accuracy drop from 92.02% to 91.99% (0.03%), and an ROC AUC increase from 89.95% to 90.09% (0.14%). All other numbers shown in outputs remained the same. It is interesting to see that grid search results caused the overall accuracy to drop from the model, but not surprising as grid search optimizes parameters based on numerous scoring metrics.</p>
+
+<p>Unoptimized Model:</p>
+
+<p>Overall Accuracy: 92.02194488650642%</p>
+
+<p>ROC AUC Score: 89.94556088156838%</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>              precision    recall  f1-score   support
+
+           0       0.90      0.98      0.94     15033
+           1       0.96      0.82      0.88      8845
+
+    accuracy                           0.92     23878
+   macro avg       0.93      0.90      0.91     23878
+weighted avg       0.92      0.92      0.92     23878 ---------------------------
+</code></pre></div></div>
+
+<p>Optimized Model:</p>
+
+<p>Overall Accuracy: 91.98844124298517%</p>
+
+<p>ROC AUC Score: 90.09114299398681%</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>              precision    recall  f1-score   support
+
+           0       0.91      0.97      0.94     15033
+           1       0.95      0.83      0.88      8845
+
+    accuracy                           0.92     23878
+   macro avg       0.93      0.90      0.91     23878
+weighted avg       0.92      0.92      0.92     23878
+</code></pre></div></div>
+
+<h4 id="logistic-model-random-under-sampling-optimized-parameters">Logistic Model, Random Under-Sampling, Optimized Parameters</h4>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># fit the logistic model
+</span><span class="n">logistic_pipeline</span><span class="p">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_rus</span><span class="p">,</span> <span class="n">y_rus</span><span class="p">)</span>
+<span class="n">y_test_pred</span> <span class="o">=</span> <span class="n">logistic_pipeline</span><span class="p">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+
+<span class="c1">#get ROC AUC score https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html
+</span><span class="n">rocscore</span> <span class="o">=</span> <span class="n">rocauc</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">)</span>
+
+<span class="c1">#print results
+</span><span class="k">print</span><span class="p">(</span><span class="s">f'Overall Accuracy: </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="n">logistic_pipeline</span><span class="p">.</span><span class="n">score</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span><span class="si">}</span><span class="s">%'</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">f'ROC AUC Score: </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="n">rocscore</span><span class="si">}</span><span class="s">%'</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">classification_report</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">))</span>
+
+
+<span class="c1">#---------------------confusion matrix--------------------
+#source: https://medium.com/@dtuk81/confusion-matrix-visualization-fc31e3f30fea
+#source: https://stackoverflow.com/questions/33779748/set-max-value-for-color-bar-on-seaborn-heatmap
+#source: https://python-graph-gallery.com/91-customize-seaborn-heatmap/
+</span><span class="k">with</span> <span class="n">Suppressor</span><span class="p">():</span>
+    <span class="n">cf_matrix</span> <span class="o">=</span> <span class="n">confusion_matrix</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">)</span>
+    <span class="n">sns</span><span class="p">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">cf_matrix</span><span class="p">,</span> <span class="n">annot</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s">'g'</span><span class="p">,</span> 
+            <span class="n">vmin</span><span class="o">=</span><span class="mi">9999999</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">9999999</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="p">.</span><span class="mi">5</span><span class="p">,</span>
+                  <span class="n">cbar</span><span class="o">=</span><span class="bp">False</span><span class="p">).</span><span class="nb">set</span><span class="p">(</span>
+        <span class="n">title</span><span class="o">=</span><span class="s">"Confusion Matrix, Logistic Regression, Random Under-Sampling"</span><span class="p">)</span>
+
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Overall Accuracy: 91.9130580450624%
+ROC AUC Score: 91.12956921567353%
+              precision    recall  f1-score   support
+
+           0       0.93      0.94      0.94     15033
+           1       0.90      0.88      0.89      8845
+
+    accuracy                           0.92     23878
+   macro avg       0.91      0.91      0.91     23878
+weighted avg       0.92      0.92      0.92     23878
+</code></pre></div></div>
+
+<p><img src="\assets\images\logistic-svm-smote\output_42_1.png" alt="png" /></p>
+
+<p>Above is the random under-sampling model using optimized parameters and the randomly under-sampled training set. Results from this model will be compared with the raw and SMOTE models in the next discussion cell, as it will be more straightforward to compare results from the three models in a side-by-side fashion.</p>
+
+<h4 id="logistic-model-smote-optimized-parameters">Logistic Model, SMOTE, Optimized Parameters</h4>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># fit the logistic model
+</span><span class="n">logistic_pipeline</span><span class="p">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_sm</span><span class="p">,</span> <span class="n">y_sm</span><span class="p">)</span>
+<span class="n">y_test_pred</span> <span class="o">=</span> <span class="n">logistic_pipeline</span><span class="p">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+
+<span class="c1">#get ROC AUC score https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html
+</span><span class="n">rocscore</span> <span class="o">=</span> <span class="n">rocauc</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">)</span>
+
+<span class="c1">#print results
+</span><span class="k">print</span><span class="p">(</span><span class="s">f'Overall Accuracy: </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="n">logistic_pipeline</span><span class="p">.</span><span class="n">score</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span><span class="si">}</span><span class="s">%'</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">f'ROC AUC Score: </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="n">rocscore</span><span class="si">}</span><span class="s">%'</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">classification_report</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">))</span>
+
+
+<span class="c1">#---------------------confusion matrix--------------------
+#source: https://medium.com/@dtuk81/confusion-matrix-visualization-fc31e3f30fea
+#source: https://stackoverflow.com/questions/33779748/set-max-value-for-color-bar-on-seaborn-heatmap
+#source: https://python-graph-gallery.com/91-customize-seaborn-heatmap/
+</span><span class="k">with</span> <span class="n">Suppressor</span><span class="p">():</span>
+    <span class="n">cf_matrix</span> <span class="o">=</span> <span class="n">confusion_matrix</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">)</span>
+    <span class="n">sns</span><span class="p">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">cf_matrix</span><span class="p">,</span> <span class="n">annot</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s">'g'</span><span class="p">,</span> 
+            <span class="n">vmin</span><span class="o">=</span><span class="mi">9999999</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">9999999</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="p">.</span><span class="mi">5</span><span class="p">,</span>
+                  <span class="n">cbar</span><span class="o">=</span><span class="bp">False</span><span class="p">).</span><span class="nb">set</span><span class="p">(</span>
+        <span class="n">title</span><span class="o">=</span><span class="s">"Confusion Matrix, Logistic Regression, SMOTE"</span><span class="p">)</span>
+
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Overall Accuracy: 92.30253790099673%
+ROC AUC Score: 90.73849327221585%
+              precision    recall  f1-score   support
+
+           0       0.91      0.97      0.94     15033
+           1       0.94      0.85      0.89      8845
+
+    accuracy                           0.92     23878
+   macro avg       0.93      0.91      0.92     23878
+weighted avg       0.92      0.92      0.92     23878
+</code></pre></div></div>
+
+<p><img src="\assets\images\logistic-svm-smote\output_45_1.png" alt="png" /></p>
+
+<p>Below are the results from the optimized models using raw, under-sampled, and over-sampled training data. The highest overall accuracy was achieved by the SMOTE model, and the higest ROC AUC score was achieved by the under-sampled model. Weighted averages for precision, recall, and f1-score were the same accross all three models. Additionally, weighted averages for precision, recall, and f1-score were the same for the unoptimized models. Of these three, is recommended to use the under-sampled or over-sampled models for prediction.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Raw Model, Optimized:
+Overall Accuracy: 91.74553982745624%
+ROC AUC Score: 89.84471547182594%
+              precision    recall  f1-score   support
+
+           0       0.90      0.97      0.94     15033
+           1       0.95      0.83      0.88      8845
+
+    accuracy                           0.92     23878
+   macro avg       0.92      0.90      0.91     23878
+weighted avg       0.92      0.92      0.92     23878 --------------------------- 
+
+Under-Sampled Model, Optimized:
+Overall Accuracy: 91.9130580450624%
+ROC AUC Score: 91.12956921567353%
+              precision    recall  f1-score   support
+
+           0       0.93      0.94      0.94     15033
+           1       0.90      0.88      0.89      8845
+
+    accuracy                           0.92     23878
+   macro avg       0.91      0.91      0.91     23878
+weighted avg       0.92      0.92      0.92     23878 ---------------------------
+
+
+SMOTE Model, Optimized:
+Overall Accuracy: 92.30253790099673%
+ROC AUC Score: 90.73849327221585%
+              precision    recall  f1-score   support
+
+           0       0.91      0.97      0.94     15033
+           1       0.94      0.85      0.89      8845
+
+    accuracy                           0.92     23878
+   macro avg       0.93      0.91      0.92     23878
+weighted avg       0.92      0.92      0.92     23878
+</code></pre></div></div>
+
+<h4 id="the-code-must-be-re-cleaned-in-order-to-evaluate-logistic-regression-feature-importance">The code must be re-cleaned in order to evaluate logistic regression feature importance.</h4>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s">"../Data/hotel_bookings.csv"</span><span class="p">)</span>
+
+<span class="c1">#replace missing values in certain columns
+#source: https://datatofish.com/replace-nan-values-with-zeros/
+</span><span class="n">df</span><span class="p">[</span><span class="s">'children'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s">'children'</span><span class="p">].</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">df</span><span class="p">[</span><span class="s">'country'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s">'country'</span><span class="p">].</span><span class="n">fillna</span><span class="p">(</span><span class="s">"unknown"</span><span class="p">)</span>
+<span class="n">df</span><span class="p">[</span><span class="s">'agent'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s">'agent'</span><span class="p">].</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">df</span><span class="p">[</span><span class="s">'company'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s">'company'</span><span class="p">].</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># Drop outlier
+</span><span class="n">df</span><span class="p">.</span><span class="n">drop</span><span class="p">(</span><span class="n">df</span><span class="p">[</span> <span class="n">df</span><span class="p">[</span><span class="s">'adr'</span><span class="p">]</span> <span class="o">==</span> <span class="mi">5400</span> <span class="p">].</span><span class="n">index</span> <span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">df</span><span class="p">.</span><span class="n">drop</span><span class="p">([</span><span class="s">'reservation_status_date'</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1">#convert reservation_status_date to day, month, year
+#source: https://stackoverflow.com/questions/25789445/pandas-make-new-column-from-string-slice-of-another-column
+</span><span class="n">df</span><span class="p">[</span><span class="s">'reservation_status_year'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">.</span><span class="n">reservation_status_date</span><span class="p">.</span><span class="nb">str</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span>
+<span class="n">df</span><span class="p">[</span><span class="s">'reservation_status_month'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">.</span><span class="n">reservation_status_date</span><span class="p">.</span><span class="nb">str</span><span class="p">[</span><span class="mi">5</span><span class="p">:</span><span class="mi">7</span><span class="p">]</span>
+<span class="n">df</span><span class="p">[</span><span class="s">'reservation_status_day'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">.</span><span class="n">reservation_status_date</span><span class="p">.</span><span class="nb">str</span><span class="p">[</span><span class="mi">8</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span>
+
+<span class="c1">#convert categoricals to proper data type
+</span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">.</span><span class="n">astype</span><span class="p">({</span><span class="s">"agent"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"company"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"is_canceled"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> 
+                <span class="s">"hotel"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"is_repeated_guest"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span>
+                <span class="s">"reserved_room_type"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"assigned_room_type"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span>
+                <span class="s">"deposit_type"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"customer_type"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span>
+                <span class="s">"country"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> 
+                <span class="s">"arrival_date_month"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"meal"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> 
+                <span class="s">"market_segment"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">'reservation_status_year'</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span>
+                <span class="s">"distribution_channel"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">'reservation_status_month'</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span>
+                <span class="s">'reservation_status_day'</span><span class="p">:</span><span class="s">'category'</span>
+               <span class="p">})</span>
+
+<span class="c1">#set the y column to its own dataframe
+</span><span class="n">y_column</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s">'is_canceled'</span><span class="p">]</span>
+<span class="k">del</span> <span class="n">df</span><span class="p">[</span><span class="s">'is_canceled'</span><span class="p">]</span>
+<span class="k">del</span> <span class="n">df</span><span class="p">[</span><span class="s">'reservation_status_date'</span><span class="p">]</span>
+<span class="k">del</span> <span class="n">df</span><span class="p">[</span><span class="s">'reservation_status'</span><span class="p">]</span>
+</code></pre></div></div>
+
+<h5 id="one-hot-encoding-1">One-hot encoding</h5>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#split dataframes into categorical and integer
+#source: https://stackoverflow.com/questions/22470690/get-list-of-pandas-dataframe-columns-based-on-data-type
+</span><span class="n">df_cat</span> <span class="o">=</span> <span class="n">df</span><span class="p">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s">'category'</span><span class="p">])</span>
+<span class="n">df_int</span> <span class="o">=</span> <span class="n">df</span><span class="p">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">exclude</span><span class="o">=</span><span class="p">[</span><span class="s">'category'</span><span class="p">])</span>
+
+<span class="c1">#list factors by dtype
+</span><span class="n">cat_var_list</span> <span class="o">=</span> <span class="n">df_cat</span><span class="p">.</span><span class="n">columns</span><span class="p">.</span><span class="n">tolist</span><span class="p">()</span>
+<span class="n">int_var_list</span> <span class="o">=</span> <span class="n">df_int</span><span class="p">.</span><span class="n">columns</span><span class="p">.</span><span class="n">tolist</span><span class="p">()</span>
+
+<span class="c1">#dummy encode: https://pandas.pydata.org/docs/reference/api/pandas.get_dummies.html
+</span><span class="n">cat_enc</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">df_cat</span><span class="p">,</span> <span class="n">drop_first</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">hot_var_list</span> <span class="o">=</span> <span class="n">cat_enc</span><span class="p">.</span><span class="n">columns</span><span class="p">.</span><span class="n">tolist</span><span class="p">()</span>
+
+<span class="c1">#merge encoded and integer dataframes
+</span><span class="n">df_enc</span> <span class="o">=</span> <span class="n">cat_enc</span><span class="p">.</span><span class="n">merge</span><span class="p">(</span><span class="n">df_int</span><span class="p">,</span> <span class="n">left_index</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">enc_var_list</span> <span class="o">=</span> <span class="n">df_enc</span><span class="p">.</span><span class="n">columns</span><span class="p">.</span><span class="n">tolist</span><span class="p">()</span>
+</code></pre></div></div>
+
+<h2 id="logistic-feature-importance">Logistic Feature Importance</h2>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#see coefficients: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
+#https://stackoverflow.com/questions/58615904/how-to-extract-coefficients-from-fitted-pipeline-for-penalized-logistic-regressi
+#https://sweetcode.io/easy-scikit-logistic-regression/
+#https://stackoverflow.com/questions/39839112/the-easiest-way-for-getting-feature-names-after-running-selectkbest-in-scikit-le
+</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">logistic_pipeline</span><span class="p">[</span><span class="s">'selector'</span><span class="p">].</span><span class="n">get_support</span><span class="p">()</span>
+<span class="n">new_features</span> <span class="o">=</span> <span class="n">df_enc</span><span class="p">.</span><span class="n">columns</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+<span class="n">new_features</span>
+<span class="n">select_vars</span> <span class="o">=</span> <span class="n">new_features</span><span class="p">.</span><span class="n">tolist</span><span class="p">()</span>
+
+<span class="c1">#https://sweetcode.io/easy-scikit-logistic-regression/
+# Get the models coefficients (and top 5 and bottom 5)
+</span><span class="n">logReg_coeff</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s">'feature_name'</span><span class="p">:</span> <span class="n">select_vars</span><span class="p">,</span> <span class="s">'model_coefficient'</span><span class="p">:</span> <span class="n">logistic_pipeline</span><span class="p">[</span><span class="s">'classifier'</span><span class="p">].</span><span class="n">coef_</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">transpose</span><span class="p">().</span><span class="n">flatten</span><span class="p">()})</span>
+<span class="n">logReg_coeff</span> <span class="o">=</span> <span class="n">logReg_coeff</span><span class="p">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s">'model_coefficient'</span><span class="p">,</span><span class="n">ascending</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="n">logReg_coeff_top</span> <span class="o">=</span> <span class="n">logReg_coeff</span><span class="p">.</span><span class="n">head</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">logReg_coeff_bottom</span> <span class="o">=</span> <span class="n">logReg_coeff</span><span class="p">.</span><span class="n">tail</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+
+<span class="c1"># Plot top 5 coefficients
+</span><span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">().</span><span class="n">set_size_inches</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="n">fg3</span> <span class="o">=</span> <span class="n">sns</span><span class="p">.</span><span class="n">barplot</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="s">'feature_name'</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s">'model_coefficient'</span><span class="p">,</span><span class="n">data</span><span class="o">=</span><span class="n">logReg_coeff_top</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="s">"Blues_d"</span><span class="p">)</span>
+<span class="n">fg3</span><span class="p">.</span><span class="n">set_xticklabels</span><span class="p">(</span><span class="n">rotation</span><span class="o">=</span><span class="mi">35</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">logReg_coeff_top</span><span class="p">.</span><span class="n">feature_name</span><span class="p">)</span>
+<span class="c1"># Plot bottom 5 coefficients
+</span><span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">().</span><span class="n">set_size_inches</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">6</span><span class="p">)</span>
+<span class="n">fg4</span> <span class="o">=</span> <span class="n">sns</span><span class="p">.</span><span class="n">barplot</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="s">'feature_name'</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s">'model_coefficient'</span><span class="p">,</span><span class="n">data</span><span class="o">=</span><span class="n">logReg_coeff_bottom</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="s">"GnBu_d"</span><span class="p">)</span>
+<span class="n">fg4</span><span class="p">.</span><span class="n">set_xticklabels</span><span class="p">(</span><span class="n">rotation</span><span class="o">=</span><span class="mi">35</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">logReg_coeff_bottom</span><span class="p">.</span><span class="n">feature_name</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">'Feature'</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">'Coefficient'</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">bottom</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">savefig</span><span class="p">(</span><span class="s">'figure_4.png'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><img src="\assets\images\logistic-svm-smote\output_70_0.png" alt="png" /></p>
+
+<p><img src="\assets\images\logistic-svm-smote\output_70_1.png" alt="png" /></p>
+
+<p>Above are graphs showing ten of the most influential features on the model, both positive and negative. The uppermost graph shows coefficients that increased the likelihood that somebody would cancel their reservation, and the lowermost graph show features that decrease the likelihood that somebody would cancel their reservation.</p>
+
+<p>The features which increase the likelihood of someone cancelling their reservation are:</p>
+<ul>
+  <li>arrival_date_month_August: If an individual’s arrival date is in August, they are more likely to cancel their hotel reservation.</li>
+  <li>reservation_status_day_04: The fourth day of any given month sees a disproportionately large number of cancellations compared to other days of the month.</li>
+  <li>arrival_date_month_December: If an individual’s arrival date is in November, they are more likely to cancel their hotel reservation.</li>
+  <li>agent_15.0: Booking through this agent makes a cancellation more likely.</li>
+  <li>deposit_type_Refundable: If the deposit type is refundable, cancellations become more likely.</li>
+</ul>
+
+<p>The features which decrease the likelihood of someone cancelling their reservation are:</p>
+<ul>
+  <li>reservation_status_day_06: If individuals are scheduled to check out on the 6th day of the month, they are less likely to cancel their reservation. This could be related to stays that extend over the first week of a month, which may be a popular time for travel. This factor was the most influential in the model as it had the largest absolute coefficient, meaning that there does seem to be an explainable trend behind the sixth day of a month being a popular check-out day.</li>
+  <li>reservation_status_day_14, 15, 16, and 17: If individuals are scheduled to check out in the middle of the month, they are less likely to cancel their reservation. It is surprising to see that this specific string of days aligned to be four of the five most influential factors in the model for individuals not cancelling their stay. Similarly to reservation_status_day_06, there must be an explainable trend behind individuals choosing to check out in the middle of the month.</li>
+</ul>
+
+<p>These initial results are promising, since the attributes which are percieved by the model as being influential on a reservation being cancelled seem logical. Vacations are taken during August and December, and those types of plans seem like they could change more readily, individual agents may encourage their customers to change hotels for a better deal, and having all of your deposit refunded upon cancelling would not discourage a customer from cancelling.</p>
+:ET

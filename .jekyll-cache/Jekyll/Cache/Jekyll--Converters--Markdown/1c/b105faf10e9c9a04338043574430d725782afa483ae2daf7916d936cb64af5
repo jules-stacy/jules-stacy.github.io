@@ -1,0 +1,431 @@
+I"�<p>A neural network pipeline was developed to predict the number of nights a guest would stay at the hotel. Coded in Python.</p>
+
+<p>This project makes use of TensorFlow-GPU to build a neural network. Hyperparameters are then optimized for the network using GridSearchCV. Finally, the trained neural network is used to regress on the number of nights a given guest is expected to stay. Many thanks to Jeff Heaton from the Washington University in St. Louis. If neural networks interest you and you want to learn more, <a href="https://www.youtube.com/channel/UCR1-GEpyOPzT2AO4D_eifdw">check out his Youtube page.</a></p>
+
+<h3 id="imports">Imports</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="n">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="nn">sklearn</span> <span class="k">as</span> <span class="n">sk</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span><span class="p">,</span> <span class="n">classification_report</span><span class="p">,</span> <span class="n">accuracy_score</span><span class="p">,</span> <span class="n">r2_score</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">mean_squared_error</span> <span class="k">as</span> <span class="n">msescore</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">roc_auc_score</span> <span class="k">as</span> <span class="n">rocauc</span>
+<span class="kn">from</span> <span class="nn">sklearn.feature_selection</span> <span class="kn">import</span> <span class="n">SelectKBest</span><span class="p">,</span> <span class="n">f_classif</span>
+<span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span><span class="p">,</span> <span class="n">make_pipeline</span><span class="p">,</span> <span class="n">FeatureUnion</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">StandardScaler</span><span class="p">,</span> <span class="n">OneHotEncoder</span><span class="p">,</span> <span class="n">LabelEncoder</span><span class="p">,</span> <span class="n">LabelBinarizer</span><span class="p">,</span> <span class="n">Normalizer</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span><span class="p">,</span> <span class="n">GridSearchCV</span>
+<span class="kn">from</span> <span class="nn">sklearn.impute</span> <span class="kn">import</span> <span class="n">SimpleImputer</span>
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LogisticRegression</span><span class="p">,</span> <span class="n">SGDClassifier</span>
+<span class="kn">from</span> <span class="nn">sklearn.svm</span> <span class="kn">import</span> <span class="n">SVC</span>
+<span class="kn">from</span> <span class="nn">sklearn.compose</span> <span class="kn">import</span> <span class="n">make_column_selector</span>
+<span class="kn">from</span> <span class="nn">sklearn.compose</span> <span class="kn">import</span> <span class="n">ColumnTransformer</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span>
+<span class="kn">from</span> <span class="nn">imblearn.under_sampling</span> <span class="kn">import</span> <span class="n">RandomUnderSampler</span>
+<span class="kn">from</span> <span class="nn">imblearn.over_sampling</span> <span class="kn">import</span> <span class="n">SMOTE</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span>
+<span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">FeatureUnion</span><span class="p">,</span> <span class="n">Pipeline</span>
+
+<span class="c1">#from scikitplot.metrics import plot_confusion_matrix # this package may not be included in base Anaconda
+</span><span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="n">sns</span>
+
+<span class="c1">#filter warnings: https://www.kite.com/python/answers/how-to-suppress-warnings-in-python
+</span><span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="p">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s">"ignore"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Neural Network Imports
+# from tensorflow import keras
+# from tensorflow.keras import layers
+</span><span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="n">tf</span>
+<span class="n">tf</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="n">set_seed</span><span class="p">(</span><span class="mi">12345</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">tensorflow.keras.models</span> <span class="kn">import</span> <span class="n">Sequential</span>
+<span class="kn">from</span> <span class="nn">tensorflow.keras.layers</span> <span class="kn">import</span> <span class="n">Dense</span><span class="p">,</span> <span class="n">Activation</span>
+<span class="kn">from</span> <span class="nn">tensorflow.keras.wrappers.scikit_learn</span> <span class="kn">import</span> <span class="n">KerasRegressor</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">cross_val_score</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">KFold</span>
+<span class="kn">from</span> <span class="nn">tensorflow.keras</span> <span class="kn">import</span> <span class="n">models</span><span class="p">,</span> <span class="n">layers</span><span class="p">,</span> <span class="n">backend</span> <span class="k">as</span> <span class="n">K</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">plot_roc_curve</span>
+<span class="kn">from</span> <span class="nn">tensorflow.python.client</span> <span class="kn">import</span> <span class="n">device_lib</span>
+
+<span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">backend</span><span class="p">.</span><span class="n">clear_session</span><span class="p">()</span>
+<span class="n">tf</span><span class="p">.</span><span class="n">debugging</span><span class="p">.</span><span class="n">set_log_device_placement</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Above are the imports for this project. Many of the imports are not used in this notebook, but are included here because they were used in the submission version of the project which included additional work.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">print</span><span class="p">(</span><span class="s">f"Tensor Flow Version: </span><span class="si">{</span><span class="n">tf</span><span class="p">.</span><span class="n">__version__</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">f"Keras Version: </span><span class="si">{</span><span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">__version__</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="s">f"Python </span><span class="si">{</span><span class="n">sys</span><span class="p">.</span><span class="n">version</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">f"Pandas </span><span class="si">{</span><span class="n">pd</span><span class="p">.</span><span class="n">__version__</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">f"Scikit-Learn </span><span class="si">{</span><span class="n">sk</span><span class="p">.</span><span class="n">__version__</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">"GPU Device: "</span><span class="p">,</span> <span class="n">tf</span><span class="p">.</span><span class="n">config</span><span class="p">.</span><span class="n">list_physical_devices</span><span class="p">(</span><span class="s">'XLA_GPU'</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Tensor Flow Version: 2.3.1
+Keras Version: 2.4.0
+
+Python 3.8.5 (default, Sep  3 2020, 21:29:08) [MSC v.1916 64 bit (AMD64)]
+Pandas 1.1.3
+Scikit-Learn 0.23.2
+GPU Device:  [PhysicalDevice(name='/physical_device:XLA_GPU:0', device_type='XLA_GPU')]
+</code></pre></div></div>
+
+<p>Above is a printout of the TensorFlow version and a confirmation that the package detects my video card. I am using an MSI GF65 Thin with an NVIDIA GeForce GTX 1660Ti. It took me more time than expected to get this to work on my machine, and if you are planning to create your own neural network and run it on your GPU, my advice is to pay attention to the version numbers of the CUDA Toolkit and cuDNN SDK that are required in order to run TensorFlow-GPU on your NVIDIA graphics card.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#variable initialization
+</span><span class="n">path</span><span class="o">=</span><span class="s">r"../Data/hotel_bookings.csv"</span>
+<span class="n">y_column</span> <span class="o">=</span> <span class="p">[]</span>
+</code></pre></div></div>
+
+<h3 id="helper-functions">Helper Functions</h3>
+
+<p>Below I have defined some helper functions which are called later in the notebook. This reduces clutter and improves consistency by referencing all the necessary code which is kept in one place.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Function to prep regression dataset
+</span>
+<span class="c1"># #encode as function for later cell
+</span><span class="k">def</span> <span class="nf">prep_data_regress</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">df</span>
+    <span class="k">global</span> <span class="n">df_enc</span>
+    <span class="k">global</span> <span class="n">enc_var_list</span>
+    <span class="k">global</span> <span class="n">y_column</span>
+    <span class="k">global</span> <span class="n">int_var_list</span>
+    
+    <span class="c1">#read csv
+</span>    <span class="n">dat_in</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        
+    <span class="c1">#replace missing values in certain columns
+</span>    <span class="c1">#source: https://datatofish.com/replace-nan-values-with-zeros/
+</span>    <span class="n">dat_in</span><span class="p">[</span><span class="s">'children'</span><span class="p">]</span> <span class="o">=</span> <span class="n">dat_in</span><span class="p">[</span><span class="s">'children'</span><span class="p">].</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">dat_in</span><span class="p">[</span><span class="s">'country'</span><span class="p">]</span> <span class="o">=</span> <span class="n">dat_in</span><span class="p">[</span><span class="s">'country'</span><span class="p">].</span><span class="n">fillna</span><span class="p">(</span><span class="s">"unknown"</span><span class="p">)</span>
+    <span class="n">dat_in</span><span class="p">[</span><span class="s">'agent'</span><span class="p">]</span> <span class="o">=</span> <span class="n">dat_in</span><span class="p">[</span><span class="s">'agent'</span><span class="p">].</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">dat_in</span><span class="p">[</span><span class="s">'company'</span><span class="p">]</span> <span class="o">=</span> <span class="n">dat_in</span><span class="p">[</span><span class="s">'company'</span><span class="p">].</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="c1"># Drop outlier
+</span>    <span class="n">dat_in</span><span class="p">.</span><span class="n">drop</span><span class="p">(</span><span class="n">dat_in</span><span class="p">[</span> <span class="n">dat_in</span><span class="p">[</span><span class="s">'adr'</span><span class="p">]</span> <span class="o">==</span> <span class="mi">5400</span> <span class="p">].</span><span class="n">index</span> <span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="c1">#convert reservation_status_date to day, month, year
+</span>    <span class="c1">#source: https://stackoverflow.com/questions/25789445/pandas-make-new-column-from-string-slice-of-another-column
+</span>    <span class="n">dat_in</span><span class="p">[</span><span class="s">'reservation_status_year'</span><span class="p">]</span> <span class="o">=</span> <span class="n">dat_in</span><span class="p">.</span><span class="n">reservation_status_date</span><span class="p">.</span><span class="nb">str</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span>
+    <span class="n">dat_in</span><span class="p">[</span><span class="s">'reservation_status_month'</span><span class="p">]</span> <span class="o">=</span> <span class="n">dat_in</span><span class="p">.</span><span class="n">reservation_status_date</span><span class="p">.</span><span class="nb">str</span><span class="p">[</span><span class="mi">5</span><span class="p">:</span><span class="mi">7</span><span class="p">]</span>
+    <span class="n">dat_in</span><span class="p">[</span><span class="s">'reservation_status_day'</span><span class="p">]</span> <span class="o">=</span> <span class="n">dat_in</span><span class="p">.</span><span class="n">reservation_status_date</span><span class="p">.</span><span class="nb">str</span><span class="p">[</span><span class="mi">8</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span>
+    <span class="n">dat_in</span><span class="p">.</span><span class="n">drop</span><span class="p">([</span><span class="s">'reservation_status_date'</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c1">#convert categoricals to proper data type
+</span>    <span class="n">dat_in</span> <span class="o">=</span> <span class="n">dat_in</span><span class="p">.</span><span class="n">astype</span><span class="p">({</span><span class="s">"agent"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"company"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"is_canceled"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"hotel"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"is_repeated_guest"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"reserved_room_type"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"assigned_room_type"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"deposit_type"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"customer_type"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"country"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span>  <span class="s">"arrival_date_month"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"meal"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span>  <span class="s">"market_segment"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">'reservation_status_year'</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">"distribution_channel"</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">'reservation_status_month'</span><span class="p">:</span><span class="s">'category'</span><span class="p">,</span> <span class="s">'reservation_status_day'</span><span class="p">:</span><span class="s">'category'</span><span class="p">})</span>
+    <span class="c1">#create total stay length df
+</span>    <span class="n">dat_in</span> <span class="p">[</span><span class="s">'total_stay_length'</span><span class="p">]</span> <span class="o">=</span> <span class="n">dat_in</span> <span class="p">[</span><span class="s">'stays_in_weekend_nights'</span><span class="p">]</span><span class="o">+</span> <span class="n">dat_in</span> <span class="p">[</span><span class="s">'stays_in_week_nights'</span><span class="p">]</span>
+    <span class="c1">#set the y column to its own dataframe and remove dependent variables
+</span>    <span class="n">y_column</span> <span class="o">=</span> <span class="n">dat_in</span><span class="p">[</span><span class="s">'total_stay_length'</span><span class="p">]</span>
+    <span class="k">del</span> <span class="n">dat_in</span><span class="p">[</span><span class="s">'is_canceled'</span><span class="p">]</span>
+    <span class="k">del</span> <span class="n">dat_in</span><span class="p">[</span><span class="s">'reservation_status_date'</span><span class="p">]</span>
+    <span class="k">del</span> <span class="n">dat_in</span><span class="p">[</span><span class="s">'reservation_status'</span><span class="p">]</span>
+    <span class="k">del</span> <span class="n">dat_in</span><span class="p">[</span><span class="s">'total_stay_length'</span><span class="p">]</span>
+    <span class="k">del</span> <span class="n">dat_in</span><span class="p">[</span><span class="s">'stays_in_weekend_nights'</span><span class="p">]</span>
+    <span class="k">del</span> <span class="n">dat_in</span><span class="p">[</span><span class="s">'stays_in_week_nights'</span><span class="p">]</span>    
+    <span class="n">df</span> <span class="o">=</span> <span class="n">dat_in</span>
+    <span class="c1">#split dataframes into categorical and integer
+</span>    <span class="c1">#source: https://stackoverflow.com/questions/22470690/get-list-of-pandas-dataframe-columns-based-on-data-type
+</span>    <span class="n">df_cat</span> <span class="o">=</span> <span class="n">dat_in</span><span class="p">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s">'category'</span><span class="p">])</span>
+    <span class="n">df_int</span> <span class="o">=</span> <span class="n">dat_in</span><span class="p">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">exclude</span><span class="o">=</span><span class="p">[</span><span class="s">'category'</span><span class="p">])</span>
+    <span class="c1">#list factors by dtype
+</span>    <span class="n">cat_var_list</span> <span class="o">=</span> <span class="n">df_cat</span><span class="p">.</span><span class="n">columns</span><span class="p">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">int_var_list</span> <span class="o">=</span> <span class="n">df_int</span><span class="p">.</span><span class="n">columns</span><span class="p">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="c1">#dummy encode: https://pandas.pydata.org/docs/reference/api/pandas.get_dummies.html
+</span>    <span class="n">cat_enc</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">df_cat</span><span class="p">,</span> <span class="n">drop_first</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">hot_var_list</span> <span class="o">=</span> <span class="n">cat_enc</span><span class="p">.</span><span class="n">columns</span><span class="p">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="c1">#merge encoded and integer dataframes
+</span>    <span class="n">df_enc</span> <span class="o">=</span> <span class="n">cat_enc</span><span class="p">.</span><span class="n">merge</span><span class="p">(</span><span class="n">df_int</span><span class="p">,</span> <span class="n">left_index</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">enc_var_list</span> <span class="o">=</span> <span class="n">df_enc</span><span class="p">.</span><span class="n">columns</span><span class="p">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">"objects created: df_cat, df_int, cat_var_list, int_var_list, cat_enc, hot_var_list, df_enc, enc_var_list"</span><span class="p">)</span>
+    
+</code></pre></div></div>
+
+<p>Above is a helper function which cleans the dataset properly for regression. This makes it easy to clean the dataset as needed, for instance when the dataset has been previously modified and a freshly cleaned dataset is needed.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Function to split the data
+</span>
+<span class="k">def</span> <span class="nf">data_split</span><span class="p">(</span><span class="n">df_enc</span><span class="p">,</span> <span class="n">strat</span><span class="o">=</span><span class="n">y_column</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">X_train</span>
+    <span class="k">global</span> <span class="n">X_test</span>
+    <span class="k">global</span> <span class="n">y_train</span>
+    <span class="k">global</span> <span class="n">y_test</span>
+    
+    <span class="c1"># set the x column to its own dataframes/series
+</span>    <span class="n">x_columns</span> <span class="o">=</span> <span class="n">df_enc</span>
+
+    <span class="c1"># train-test split with stratification on the class we are trying to predict
+</span>    <span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span> 
+                                        <span class="n">x_columns</span><span class="p">,</span>          <span class="c1"># x column values
+</span>                                        <span class="n">y_column</span><span class="p">,</span>           <span class="c1"># column to predict
+</span>                                        <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>      <span class="c1"># 80/20 split
+</span>                                        <span class="n">random_state</span><span class="o">=</span><span class="mi">12345</span><span class="p">,</span> <span class="c1"># random state for repeatability
+</span>                                        <span class="n">stratify</span><span class="o">=</span><span class="n">strat</span><span class="p">)</span> <span class="c1"># stratification to preserve class imbalance 
+</span>    <span class="k">print</span><span class="p">(</span><span class="s">'objects created: X_train, X_test, y_train, y_test'</span><span class="p">)</span>
+
+<span class="c1">#Function to perform SMOTE on data    
+#SMOTE implementation
+#http://glemaitre.github.io/imbalanced-learn/generated/imblearn.under_sampling.RandomUnderSampler.html
+#perform random under-sampling and SMOTE on training dataset    
+</span><span class="k">def</span> <span class="nf">smote_data</span><span class="p">():</span>
+    <span class="k">global</span> <span class="n">X_train</span>
+    <span class="k">global</span> <span class="n">y_train</span>
+    <span class="k">global</span> <span class="n">X_sm</span>
+    <span class="k">global</span> <span class="n">y_sm</span>
+
+    <span class="n">sm</span><span class="o">=</span><span class="n">SMOTE</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">12345</span><span class="p">)</span>
+    <span class="n">X_sm</span><span class="p">,</span> <span class="n">y_sm</span> <span class="o">=</span> <span class="n">sm</span><span class="p">.</span><span class="n">fit_sample</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">'objects created: X_sm, y_sm (remember, these are training sets)'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Above is a helper function to split the dataset into train and test datasets. Data was split 80/20 into train/test datasets and a random state was specified for consistency within the project. The option for data stratification was preserved through the strat argument within data_split.</p>
+
+<p>Additionally there is a function to perform random over-sampling on the dataset, which is not used in this notebook.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">rmse</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">):</span>
+    <span class="n">rsqmetric</span><span class="o">=</span><span class="mi">100</span><span class="o">*</span><span class="n">r2_score</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">)</span>
+    <span class="n">rmsemetric</span><span class="o">=</span><span class="n">np</span><span class="p">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">msescore</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">))</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">f'R2: </span><span class="si">{</span><span class="n">rsqmetric</span><span class="si">}</span><span class="s">%'</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">f'RMSE: </span><span class="si">{</span><span class="n">rmsemetric</span><span class="si">}</span><span class="s">%'</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rsqmetric</span><span class="p">,</span> <span class="n">rmsemetric</span>
+</code></pre></div></div>
+
+<p>This function is designed to return the root mean square error and R squared metrics. These metrics provide measurements of performance for the neural network.</p>
+
+<h3 id="data-preparation">Data Preparation</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#prep and split the regression data
+</span><span class="n">prep_data_regress</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<span class="n">data_split</span><span class="p">(</span><span class="n">df_enc</span><span class="p">,</span> <span class="n">strat</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>objects created: df_cat, df_int, cat_var_list, int_var_list, cat_enc, hot_var_list, df_enc, enc_var_list
+objects created: X_train, X_test, y_train, y_test
+</code></pre></div></div>
+
+<p>Defining the helper functions above automates the data preparation step, making it very compact. Scaling the data as a preprocessing step is not present here but is present within the pipeline below.</p>
+
+<h2 id="modeling">Modeling</h2>
+<h4 id="building-the-model">Building the Model</h4>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># # #https://keras.io/guides/sequential_model/
+# https://www.marktechpost.com/2019/06/17/regression-with-keras-deep-learning-with-keras-part-3/
+# adabound optimizer https://reposhub.com/CyberZHG-keras-adabound-python-deep-learning.html
+</span><span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="n">nodes1</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">nodes2</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">nodes3</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="s">'Adam'</span><span class="p">):</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">models</span><span class="p">.</span><span class="n">Sequential</span><span class="p">()</span>
+    <span class="n">model</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">layers</span><span class="p">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">nodes1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s">'relu'</span><span class="p">,</span> <span class="n">input_shape</span><span class="o">=</span><span class="p">[</span><span class="n">X_train</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]]))</span>
+    <span class="n">model</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">layers</span><span class="p">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">nodes2</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s">'relu'</span><span class="p">))</span>
+    <span class="n">model</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">layers</span><span class="p">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">nodes3</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s">'relu'</span><span class="p">))</span>
+
+    <span class="c1"># output layer
+</span>    <span class="n">model</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">layers</span><span class="p">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+
+    <span class="c1"># compile model, specify optimizer and loss fn
+</span>    <span class="n">model</span><span class="p">.</span><span class="nb">compile</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="o">=</span><span class="s">'mse'</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="s">'mae'</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">model</span>
+</code></pre></div></div>
+
+<p>Above, the skeleton of the neural network is created. The model cannot be used for prediction without first fitting to the training dataset.</p>
+
+<p>A sequential model is defined and 4 layers are added. There is technically a fifth layer, the “input” layer, which reads the data into the model. This is specified by the input_shape parameter, which tells node1 to expect data in the same shape as the data being fed into the model.</p>
+
+<p>The hidden layers of the model, node1 node2 and node3, are all rectified linear unit (reLu)-activated layers. This activation outputs the maximum of either the transformed input value or zero. This allows the node to behave linearly while being non-linear.</p>
+
+<p>The last layer added to the model is the output layer, composed of a single node. This node outputs the predicted number of nights each guest would stay at a hotel. Finally, the model is compiled.</p>
+
+<h4 id="building-the-pipeline">Building the Pipeline</h4>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#https://machinelearningmastery.com/regression-tutorial-keras-deep-learning-library-python/
+#https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.KFold.html
+</span>
+<span class="n">column_transformer</span> <span class="o">=</span> <span class="n">ColumnTransformer</span><span class="p">([</span>
+    <span class="p">(</span><span class="s">"scaler"</span><span class="p">,</span> <span class="n">StandardScaler</span><span class="p">(</span><span class="n">with_mean</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span> <span class="n">int_var_list</span><span class="p">)</span> <span class="c1"># adjusts data to the same scale
+</span><span class="p">],</span> <span class="n">remainder</span><span class="o">=</span><span class="s">"passthrough"</span><span class="p">)</span>
+
+<span class="n">keras_pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([</span>
+    <span class="p">(</span><span class="s">'datafeed'</span><span class="p">,</span> <span class="n">column_transformer</span><span class="p">),</span>              <span class="c1"># grabs finalized datasets
+</span>    <span class="p">(</span><span class="s">'selector'</span><span class="p">,</span> <span class="n">SelectKBest</span><span class="p">(</span><span class="n">f_classif</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="s">'all'</span><span class="p">)),</span> <span class="c1"># variable selection procedure
+</span>    <span class="p">(</span><span class="s">'kr'</span><span class="p">,</span> <span class="n">KerasRegressor</span><span class="p">(</span><span class="n">build_fn</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>           <span class="c1"># deep learn regression using Keras
+</span><span class="p">])</span>
+
+</code></pre></div></div>
+
+<p>The pipeline is defined above. The pipeline scales the integer data using Scikit-Learn’s StandardScaler function. It then passes the data through a variable selection procedure (this is set to k=all and is required to be so by the neural network), and then calls the model using the KerasRegressor method.</p>
+
+<p>Within KerasRegressor, the epochs parameter is specified to be 150; this is the number of times the neural network uses the entire training set to update the weights within the model. Batch size is the number of observations used by the model before updating the model weights. Verbose is set to zero to suppress outputs.</p>
+
+<h3 id="hyperparameter-tuning-using-grid-search">Hyperparameter Tuning Using Grid Search</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># https://www.kaggle.com/med92amine/keras-hyperparameter-tuning
+# https://medium.com/@am.benatmane/keras-hyperparameter-tuning-using-sklearn-pipelines-grid-search-with-cross-validation-ccfc74b0ce9f
+# define the grid search parameters
+</span><span class="n">param_grid</span> <span class="o">=</span> <span class="p">{</span>
+<span class="c1">#     'kr__nodes1': [512, 256],
+#     'kr__nodes2': [256, 128],
+#     'kr__nodes3': [ 16, 32, 64],    
+</span>   <span class="s">'kr__batch_size'</span><span class="p">:[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">],</span>
+   <span class="s">'kr__optimizer'</span><span class="p">:[</span><span class="s">'rmsprop'</span><span class="p">,</span> <span class="s">'Adam'</span><span class="p">,</span> <span class="s">'sgd'</span><span class="p">],</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Now that the pipeline is defined, the optimal values for the hyperparameters can be found by performing a grid search. This is an iterative method of tuning hyperparameters. The hyperparameters specified are nodes1, nodes2, and nodes3. In prior grid searches, the optimizer and batch size were tested, and it was found that the Adam optimizer and a batch size of 32 allowed the model to perform best. These values were run separately from each other because of time constraints; if all the parameters were to be tested together, the estimated time for completion would be approximately 3.5 days on this hardware.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># perform grid search with multi-metric evaluation
+</span><span class="n">scoring</span> <span class="o">=</span> <span class="p">{</span><span class="s">'RMSE'</span><span class="p">:</span><span class="s">'neg_root_mean_squared_error'</span><span class="p">,</span> <span class="s">'R2'</span><span class="p">:</span><span class="s">'r2'</span><span class="p">,</span> <span class="s">'Variance'</span><span class="p">:</span><span class="s">'explained_variance'</span><span class="p">}</span>
+<span class="n">grid</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="n">keras_pipeline</span><span class="p">,</span> <span class="n">param_grid</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="n">scoring</span><span class="p">,</span> <span class="n">refit</span><span class="o">=</span><span class="s">'RMSE'</span><span class="p">)</span> 
+<span class="c1">#  
+# fitting the model for grid search 
+</span><span class="n">grid</span><span class="p">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+    
+<span class="k">print</span><span class="p">(</span><span class="n">grid</span><span class="p">.</span><span class="n">best_estimator_</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Fitting 5 folds for each of 12 candidates, totalling 60 fits
+[CV] kr__nodes1=512, kr__nodes2=256, kr__nodes3=16 ...................
+
+
+[Parallel(n_jobs=1)]: Using backend SequentialBackend with 1 concurrent workers.
+
+
+[CV]  kr__nodes1=512, kr__nodes2=256, kr__nodes3=16, R2=0.351, RMSE=-2.117, Variance=0.372, total= 9.0min
+[CV] kr__nodes1=512, kr__nodes2=256, kr__nodes3=16 ...................
+
+
+[Parallel(n_jobs=1)]: Done   1 out of   1 | elapsed:  9.0min remaining:    0.0s
+
+
+[CV]  kr__nodes1=512, kr__nodes2=256, kr__nodes3=16, R2=0.125, RMSE=-2.384, Variance=0.126, total= 9.0min
+[CV] kr__nodes1=512, kr__nodes2=256, kr__nodes3=16 ...................
+
+
+[Parallel(n_jobs=1)]: Done   2 out of   2 | elapsed: 17.9min remaining:    0.0s
+
+
+[CV]  kr__nodes1=512, kr__nodes2=256, kr__nodes3=16, R2=0.395, RMSE=-2.016, Variance=0.401, total= 8.8min
+[CV] kr__nodes1=512, kr__nodes2=256, kr__nodes3=16 ...................
+[CV]  kr__nodes1=512, kr__nodes2=256, kr__nodes3=16, R2=-0.000, RMSE=-2.554, Variance=0.000, total= 9.4min
+[CV] kr__nodes1=512, kr__nodes2=256, kr__nodes3=16 ...................
+[CV]  kr__nodes1=512, kr__nodes2=256, kr__nodes3=16, R2=0.347, RMSE=-2.058, Variance=0.350, total= 9.7min
+[CV] kr__nodes1=512, kr__nodes2=256, kr__nodes3=32 ...................
+[CV]  kr__nodes1=512, kr__nodes2=256, kr__nodes3=32, R2=0.286, RMSE=-2.219, Variance=0.334, total= 9.0min
+[CV] kr__nodes1=512, kr__nodes2=256, kr__nodes3=32 ...................
+</code></pre></div></div>
+
+<h1>…</h1>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[Parallel(n_jobs=1)]: Done  60 out of  60 | elapsed: 528.8min finished
+
+
+Pipeline(steps=[('datafeed',
+                 ColumnTransformer(remainder='passthrough',
+                                   transformers=[('scaler',
+                                                  StandardScaler(with_mean=False),
+                                                  ['lead_time',
+                                                   'arrival_date_year',
+                                                   'arrival_date_week_number',
+                                                   'arrival_date_day_of_month',
+                                                   'adults', 'children',
+                                                   'babies',
+                                                   'previous_cancellations',
+                                                   'previous_bookings_not_canceled',
+                                                   'booking_changes',
+                                                   'days_in_waiting_list',
+                                                   'adr',
+                                                   'required_car_parking_spaces',
+                                                   'total_of_special_requests'])])),
+                ('selector', SelectKBest(k='all')),
+                ('kr',
+                 &lt;tensorflow.python.keras.wrappers.scikit_learn.KerasRegressor object at 0x000001BB1126D160&gt;)])
+</code></pre></div></div>
+
+<p>Above is a small portion of the grid search output. Because verbose is set to 3, a significant amount of information is displayed about each cross-validation step. The optimal model is defined through multi-metric scoring, using the r-squared, root mean square error, and explained variance methods within Scikit-Learn.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">cv_results</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">grid</span><span class="p">.</span><span class="n">cv_results_</span><span class="p">)</span>
+<span class="n">cv_results</span><span class="p">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">grid</span><span class="p">.</span><span class="n">best_index_</span><span class="p">]</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>mean_fit_time                                                      519.94
+std_fit_time                                                      12.8087
+mean_score_time                                                  0.738918
+std_score_time                                                  0.0981172
+param_kr__nodes1                                                      512
+param_kr__nodes2                                                      256
+param_kr__nodes3                                                       64
+params                  {'kr__nodes1': 512, 'kr__nodes2': 256, 'kr__no...
+split0_test_RMSE                                                 -2.05955
+split1_test_RMSE                                                 -2.04441
+split2_test_RMSE                                                 -2.04446
+split3_test_RMSE                                                 -2.11146
+split4_test_RMSE                                                 -2.04865
+mean_test_RMSE                                                   -2.06171
+std_test_RMSE                                                   0.0254857
+rank_test_RMSE                                                          1
+split0_test_R2                                                   0.385619
+split1_test_R2                                                   0.356677
+split2_test_R2                                                   0.377971
+split3_test_R2                                                   0.316118
+split4_test_R2                                                   0.352148
+mean_test_R2                                                     0.357707
+std_test_R2                                                     0.0242952
+rank_test_R2                                                            1
+split0_test_Variance                                             0.386977
+split1_test_Variance                                             0.365946
+split2_test_Variance                                             0.382962
+split3_test_Variance                                             0.322105
+split4_test_Variance                                              0.35448
+mean_test_Variance                                               0.362494
+std_test_Variance                                               0.0233485
+rank_test_Variance                                                      3
+Name: 2, dtype: object
+</code></pre></div></div>
+
+<p>Finally, the results of the grid search are displayed above. The optimal number of nodes for each layer are shown to be 512, 256, and 64 for layers 1, 2, and 3 respectively. The scoring metrics for each fold as well as the mean scoring metrics for all five folds are also shown.</p>
+
+<h3 id="fitting-and-scoring-the-model">Fitting and Scoring the Model</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">keras_pipeline</span><span class="p">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Pipeline(steps=[('datafeed',
+                 ColumnTransformer(remainder='passthrough',
+                                   transformers=[('scaler',
+                                                  StandardScaler(with_mean=False),
+                                                  ['lead_time',
+                                                   'arrival_date_year',
+                                                   'arrival_date_week_number',
+                                                   'arrival_date_day_of_month',
+                                                   'adults', 'children',
+                                                   'babies',
+                                                   'previous_cancellations',
+                                                   'previous_bookings_not_canceled',
+                                                   'booking_changes',
+                                                   'days_in_waiting_list',
+                                                   'adr',
+                                                   'required_car_parking_spaces',
+                                                   'total_of_special_requests'])])),
+                ('selector', SelectKBest(k='all')),
+                ('kr',
+                 &lt;tensorflow.python.keras.wrappers.scikit_learn.KerasRegressor object at 0x000001BA9ADE09A0&gt;)])
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">y_test_pred</span> <span class="o">=</span> <span class="n">keras_pipeline</span><span class="p">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Above the model is fitted, and then the model predicts total_stay_length values for the test set. Prior to fitting, hyperparameter values from the grid search are updated and the model is re-compiled.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">nn_rsq</span><span class="p">,</span> <span class="n">nn_rmse</span> <span class="o">=</span> <span class="n">rmse</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>R2: 37.16639575352713%
+RMSE: 1.9747863240567953%
+</code></pre></div></div>
+
+<p>Finally, the rmse helper function defined at the beginning of the notebook is called in order to score the fitted model. This function uses the predicted and actual total_stay_length values for the test dataset, which saves time by not calling the modeling pipeline.</p>
+
+<p>The predicted values result in an r-squared value of 37%. Higher r-squared values represent smaller differences between observed and predicted values. The root mean square error of 1.97 indicates that the model is able to predict the total stay length of a guest to within two days.</p>
+
+<p>This model is not highly accurate but does have its uses. Given that one- and two-week stay lengths were common and that the maximum stay length was in excess of 60 days, the fact that the model is able to predict total stay length to within two days is decent. In this case we can probably conclude that the model is not over-fitted. The model can be improved by providing more training data, and potentially by adding or taking away hidden layers. Additional fine-tuning can also be performed by changing the model to a dense model or by adding dropout to the model.</p>
+
+<p>Because reservation length is a variable that was passed into the model, we can conclude that that variable is not always useful for predicting how long a guest would stay at the hotel. One of the factors that could influence this inaccuracy is that cancellations (or stays of length zero) were not removed from the dataset.</p>
+:ET

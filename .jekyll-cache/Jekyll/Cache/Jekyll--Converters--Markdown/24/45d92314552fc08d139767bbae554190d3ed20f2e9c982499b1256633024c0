@@ -1,0 +1,409 @@
+I"]~<p>Baltimore crime data was clustered based on police districts. Geographical data was visualized using Cartopy and Open Street Maps. Coded in Python.</p>
+
+<p>This project makes use of Scikit-Learn’s clustering methods in order to cluster crime data.</p>
+
+<p><img src="/assets/images/baltimore_crime/output_121_0.png" alt="crime locations clustered by police district" title="a 3d graph of crime latitudes and longitudes, clustered by police district" /></p>
+
+<p>Data was obtained from the Baltimore Sun: https://www.baltimoresun.com/news/crime/bal-police-codes-box-story.html. It represents crimes reported in the Baltimore area between 1960 and November 2020. Many factors are reported for each crime, but the ones that were primarily used in this project were latitude, longitude, and police post (a subdivision of the police district).</p>
+
+<p>Additionally, weather data was combined with the crime data in an attempt to relate the two. The weather data was obtained from this site: https://towardsdatascience.com/obtain-historical-weather-forecast-data-in-csv-format-using-python-5a6c090fc828</p>
+
+<h2 id="visualizing-the-raw-data">Visualizing the Raw Data</h2>
+
+<p>First, the datasets were cleaned and combined in order to remove all NA values, and the year was limited to 2014-2020 because of the number of entries in the dataset. If the data was to be represented on a map of Baltimore, it would get cluttered very quickly. Instead, the data is better represented as a frequency plot:</p>
+
+<p><img src="/assets/images/baltimore_crime/output_59_0.png" alt="crime frequency by latitude/longitude bin" title="a frequency heatmap overlaid on top of a map of Baltimore" /></p>
+
+<p>Above is a heatmap of crimes committed in the Baltimore area. This heatmap is a 2-dimensional histogram of crimes committed in a location given by latitude and longitude, and is overlaid on a map of Balitmore to visually represent the areas where crimes were most committed. The highest volume of crimes are committed in the downtown area at the heart of Baltimore and a likely explanation is that this is the largest urban center in the area and is therefore densely populated. Another crime hotspot appears to be the area surrounding the park to the east of downtown Baltimore.</p>
+
+<p>The map was plotted using the Cartopy package, which sourced the background tile from Open Street Maps. Crime latitudes and longitudes were transformed using a geodetic coordinate system (necessary in this case to match the coordinate system of the map) and then plotted on top of the map using Matplotlib.</p>
+
+<h3 id="crime-frequency-heatmap-code">Crime Frequency Heatmap Code</h3>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#initialize the figure
+</span><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span><span class="mi">30</span><span class="p">))</span>
+<span class="c1">#call cartopy's embedded open street maps function
+</span><span class="n">imagery</span> <span class="o">=</span> <span class="n">OSM</span><span class="p">()</span>
+<span class="c1">#define the axes and limit the size of the map in latitude/longitude
+</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="n">axes</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="n">imagery</span><span class="p">.</span><span class="n">crs</span><span class="p">,</span> <span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="n">set_extent</span><span class="p">((</span> <span class="o">-</span><span class="mf">76.80</span><span class="p">,</span> <span class="o">-</span><span class="mf">76.4</span><span class="p">,</span> <span class="mf">39.1</span><span class="p">,</span> <span class="mf">39.4</span><span class="p">))</span>
+
+<span class="c1">#plot the map on the axes
+</span><span class="n">zoom</span> <span class="o">=</span> <span class="mi">12</span>
+<span class="n">ax</span><span class="p">.</span><span class="n">add_image</span><span class="p">(</span><span class="n">imagery</span><span class="p">,</span> <span class="n">zoom</span><span class="p">)</span>
+
+
+<span class="c1"># do coordinate conversion of (x,y)
+</span><span class="n">xynps</span> <span class="o">=</span> <span class="n">ax</span><span class="p">.</span><span class="n">projection</span><span class="p">.</span><span class="n">transform_points</span><span class="p">(</span><span class="n">ccrs</span><span class="p">.</span><span class="n">Geodetic</span><span class="p">(),</span> <span class="n">crimelong</span><span class="p">,</span> <span class="n">crimelat</span><span class="p">)</span>
+<span class="c1"># make a 2D histogram (frequency heatmap)
+</span><span class="n">h</span> <span class="o">=</span> <span class="n">ax</span><span class="p">.</span><span class="n">hist2d</span><span class="p">(</span><span class="n">xynps</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">xynps</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">bins</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+<span class="c1">#add a title
+</span><span class="n">plt</span><span class="p">.</span><span class="n">title</span><span class="p">(</span><span class="s">'Baltimore Crimes, Heatmap'</span><span class="p">)</span>
+<span class="c1">#add a color bar (legend)
+</span><span class="n">cbar</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">shrink</span><span class="o">=</span><span class="mf">0.45</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s">'%.1f'</span><span class="p">)</span>
+<span class="c1">#show the plot
+</span><span class="n">plt</span><span class="p">.</span><span class="n">show</span><span class="p">()</span>
+</code></pre></div></div>
+<p>The map was first plotted on the axes and then a heatmap (or 2-dimensional histogram) was overlaid on top. Of particular note, the data had to be transformed using a geodetic datum in order for data to appear on the map.</p>
+
+<h2 id="clustering-police-post">Clustering: Police Post</h2>
+
+<p><img src="/assets/images/baltimore_crime/output_80_0.png" alt="crime data clustered based on latitude, longitude, and post" title="Baltimore crimes clustered based on police post" /></p>
+
+<p>Baltimore is divided up into 126 police posts. Crimes in the dataset included the police post they occurred in, so the point of this exercise is two-fold: to demonstrate that the clustering algorithm can re-construct Baltimore’s police posts based on raw data, and to tune the hyperparameters related to the model.</p>
+
+<p>As the above graph shows, the clustering algorithm was able to re-create all 126 police posts. This was expected, since post is given as a clustering variable. Observe that the clusters tend to be bounded by roads, which is also how police posts are defined. Though the example is simple, is worth noting that this same method can be applied to another scenario such as clustering movies based on rating from 1 to 5.</p>
+
+<h3 id="modeling">Modeling</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#initialize parameters: minimum number of points per cluster and cluster radius
+</span><span class="n">X3_minpts</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">X3_eps</span> <span class="o">=</span> <span class="mf">0.02</span>
+
+<span class="c1">#call Scikit-Learn's DBSCAN method to cluster the points, X3=dataframe
+</span><span class="n">db</span> <span class="o">=</span> <span class="n">DBSCAN</span><span class="p">(</span><span class="n">eps</span><span class="o">=</span><span class="n">df_eps</span><span class="p">,</span> <span class="n">min_samples</span><span class="o">=</span><span class="n">df_minpts</span><span class="p">).</span><span class="n">fit</span><span class="p">(</span><span class="n">X3</span><span class="p">)</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="n">db</span><span class="p">.</span><span class="n">labels_</span>
+
+<span class="c1">#calculate the number of clusters: number of labels minus the noise label if present
+</span><span class="n">n_clusters_</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">labels</span><span class="p">))</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">in</span> <span class="n">labels</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
+
+<span class="c1">#Determine which samples are "core" samples
+</span><span class="n">core_samples_mask</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">db</span><span class="p">.</span><span class="n">labels_</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+<span class="n">core_samples_mask</span><span class="p">[</span><span class="n">db</span><span class="p">.</span><span class="n">core_sample_indices_</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+</code></pre></div></div>
+
+<p>The DBSCAN method was used to cluster all of the points based on latitude, longitude, and police posts. Prior to fitting the model, the minimum number of points per cluster and the clustering radius had to be specified. Though it is not explicitly shown in this notebook, these parameters were tuned by trial-and-error until acceptable results were achieved by the model.</p>
+
+<h3 id="visualize-results">Visualize Results</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#initialize figure
+</span><span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+<span class="c1">#get the list of labels
+</span><span class="n">unique_labels</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+<span class="c1">#generate a list of unique colors as long as the list of labels
+</span><span class="n">colors</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="n">cm</span><span class="p">.</span><span class="n">Spectral</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_labels</span><span class="p">)))</span>
+
+<span class="c1">#step through each label and color
+</span><span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">unique_labels</span><span class="p">,</span> <span class="n">colors</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="c1">#Set the color for noise to black
+</span>        <span class="n">col</span> <span class="o">=</span> <span class="s">'k'</span>
+
+<span class="c1">#set the iteration class mask
+</span>    <span class="n">class_member_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">labels</span> <span class="o">==</span> <span class="n">k</span><span class="p">)</span>
+
+<span class="c1">#Deal with all core points
+</span>    <span class="n">xy</span> <span class="o">=</span> <span class="n">X3</span><span class="p">[</span><span class="n">class_member_mask</span> <span class="o">&amp;</span> <span class="n">core_samples_mask</span><span class="p">]</span>
+    <span class="c1">#plot the core points
+</span>    <span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xy</span><span class="p">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">xy</span><span class="p">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="s">'o'</span><span class="p">,</span> <span class="n">markerfacecolor</span><span class="o">=</span><span class="n">col</span><span class="p">,</span>
+             <span class="n">markeredgecolor</span><span class="o">=</span><span class="s">'w'</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+
+<span class="c1">#Deal with all noise points
+</span>    <span class="c1">#plot the rest of the points
+</span>    <span class="n">xy</span> <span class="o">=</span> <span class="n">X3</span><span class="p">[</span><span class="n">class_member_mask</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">core_samples_mask</span><span class="p">]</span>
+    <span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xy</span><span class="p">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">xy</span><span class="p">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="s">'o'</span><span class="p">,</span> <span class="n">markerfacecolor</span><span class="o">=</span><span class="n">col</span><span class="p">,</span>
+             <span class="n">markeredgecolor</span><span class="o">=</span><span class="s">'w'</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="c1">#Set the title and grid
+</span><span class="n">plt</span><span class="p">.</span><span class="n">title</span><span class="p">(</span><span class="s">'Estimated number of clusters: %d'</span> <span class="o">%</span> <span class="n">n_clusters_</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">show</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>The above code re-creates the graph shown at the beginning of this section. The code automatically uses the first two columns in the dataframe as the axes variables. It gives each cluster a unique color, and colors the noise points black.</p>
+
+<h3 id="verify-results">Verify Results</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">X3_w_labels</span> <span class="o">=</span> <span class="n">copy</span><span class="p">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">X3</span><span class="p">)</span>
+<span class="n">X3_w_labels</span><span class="p">[</span><span class="s">'cluster_id'</span><span class="p">]</span> <span class="o">=</span> <span class="n">db</span><span class="p">.</span><span class="n">labels_</span>
+<span class="n">X3_w_labels</span><span class="p">.</span><span class="n">groupby</span><span class="p">(</span><span class="s">'cluster_id'</span><span class="p">).</span><span class="n">std</span><span class="p">()[</span><span class="s">'Post'</span><span class="p">].</span><span class="n">sort_values</span><span class="p">()</span>
+</code></pre></div></div>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cluster_id
+0      0.0
+91     0.0
+90     0.0
+89     0.0
+88     0.0
+      ... 
+35     0.0
+34     0.0
+33     0.0
+46     0.0
+125    0.0
+Name: Post, Length: 126, dtype: float64
+</code></pre></div></div>
+
+<p>As a validation step, the standard deviation of “Post” is calculated for the observations within each cluster. This returns the standard deviation for the “Post” variable for each cluster. If the standard deviation of a cluster is equal to zero, that means that all the points in that cluster have the same “Post” value. Values are sorted, which indicates that all standard deviations are equal to zero, indicating that the model correctly classified all points.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">silhouette_score</span><span class="p">(</span><span class="n">X3</span><span class="p">.</span><span class="n">sample</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">12345</span><span class="p">),</span> <span class="n">X3_w_labels</span><span class="p">[</span><span class="s">'cluster_id'</span><span class="p">].</span><span class="n">sample</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">12345</span><span class="p">),</span> <span class="n">metric</span> <span class="o">=</span> <span class="s">'euclidean'</span><span class="p">)</span>
+</code></pre></div></div>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0.9933050301880157
+</code></pre></div></div>
+
+<p>The silhouette score for this set of clusters is nearly 1. This indicates extremely good clustering with clusters that show strong and clear separation from other clusters, and also that points are close to one another within each cluster. Silhouette scores can range from 1 to -1. The silhouette score is designed such that 1 is the best possible score, -1 is the worst possible score, and values near 0 indicate overlapping clusters. Values near 1 indicate that clusters do not overlap and that points are dissimilar from other clusters. Values near -1 indicate that clusters do not overlap, but that points are more similar to other clusters.</p>
+
+<h2 id="clustering-police-district">Clustering: Police District</h2>
+
+<p><img src="/assets/images/baltimore_crime/output_121_0.png" alt="baltimore police districts from latitude, longitude, and post" title="Baltimore police districts, recreated from police posts" /></p>
+
+<p>Clustering algorithms were run to see if Baltimore’s 9 police districts could be reconstructed from police post information. This information was given as a variable in the raw data, but was not given to the clustering algorithm. Note the color difference between the North and Northeast districts, and compare the above graph to the map below.</p>
+
+<p><img src="/assets/images/baltimore_crime/output_123_0.png" alt="baltimore police districts" title="actual map of Baltimore police districts" /></p>
+
+<p>Visually the clustering algorithm was successful in recreating Baltimore’s police districts based on the police post and location data for crimes committed between 2014 and 2020.</p>
+
+<h3 id="modeling-and-visualization">Modeling and Visualization</h3>
+
+<p>Modeling and visualization code was the same as above, except that the minimum number of points was set to 40 and the clustering radius was set to 10. These values had to be much bigger than the police post values because police districts cover a much larger area.</p>
+
+<h3 id="verify-results-1">Verify Results</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#copy the input data
+</span><span class="n">X3_w_labels</span> <span class="o">=</span> <span class="n">copy</span><span class="p">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">X3</span><span class="p">)</span>
+<span class="c1">#add the cluster labels to the dataframe as determined by the algorithm
+</span><span class="n">X3_w_labels</span><span class="p">[</span><span class="s">'cluster_id'</span><span class="p">]</span> <span class="o">=</span> <span class="n">db</span><span class="p">.</span><span class="n">labels_</span>
+
+<span class="c1">#one-hot encode the districts
+</span><span class="n">x3_dummies</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s">'District'</span><span class="p">]).</span><span class="n">reset_index</span><span class="p">()</span>
+<span class="c1">#merge the one-hot encoded data with the dataset that now also contains the cluster labels, to create one large dataframe
+</span><span class="n">X3_w_labels</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">merge</span><span class="p">(</span><span class="n">X3_w_labels</span><span class="p">,</span> <span class="n">x3_dummies</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s">'inner'</span><span class="p">,</span> <span class="n">left_index</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c1">#set the number of decimals to be large
+</span><span class="n">pd</span><span class="p">.</span><span class="n">set_option</span><span class="p">(</span><span class="s">"display.precision"</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+<span class="c1">#find the standard deviation of 
+</span><span class="n">X3_w_labels</span><span class="p">.</span><span class="n">groupby</span><span class="p">(</span><span class="s">'cluster_id'</span><span class="p">).</span><span class="n">std</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>crimelong</th>
+      <th>crimelat</th>
+      <th>Post</th>
+      <th>index</th>
+      <th>CENTRAL</th>
+      <th>EASTERN</th>
+      <th>NORTHEAST</th>
+      <th>NORTHERN</th>
+      <th>NORTHWEST</th>
+      <th>SOUTHEAST</th>
+      <th>SOUTHERN</th>
+      <th>SOUTHWEST</th>
+      <th>WESTERN</th>
+    </tr>
+    <tr>
+      <th>cluster_id</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0.01977878</td>
+      <td>0.00690827</td>
+      <td>3.29795098</td>
+      <td>80088.62444110</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>0.01617222</td>
+      <td>0.01425231</td>
+      <td>3.29606246</td>
+      <td>81422.84535545</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>0.00803785</td>
+      <td>0.00848922</td>
+      <td>3.27283914</td>
+      <td>80300.32216347</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>0.01834790</td>
+      <td>0.02011592</td>
+      <td>3.31915894</td>
+      <td>83568.46481895</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>0.01740861</td>
+      <td>0.01590656</td>
+      <td>3.28587408</td>
+      <td>82685.48362709</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>0.01985762</td>
+      <td>0.01780821</td>
+      <td>3.29627652</td>
+      <td>82536.05866798</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>0.01505976</td>
+      <td>0.01469923</td>
+      <td>3.27455490</td>
+      <td>82601.02729378</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>0.01306808</td>
+      <td>0.00650235</td>
+      <td>3.26240335</td>
+      <td>80652.46272494</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>0.00764339</td>
+      <td>0.00945660</td>
+      <td>3.17560861</td>
+      <td>81746.90865643</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>Because district data was not given to the clustering algorithm, it was able to be used as test data to score the model. In the same way as the first model, the standard deviation of each cluster was calculated. The table of zeroes indicates that the model was able to perfectly recreate police districts based on latitude, longitude, and police post of reported crimes between 2014 and 2020, because all points in each cluster share the same district.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">silhouette_score</span><span class="p">(</span><span class="n">X3</span><span class="p">.</span><span class="n">sample</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">12345</span><span class="p">),</span> <span class="n">X3_w_labels</span><span class="p">[</span><span class="s">'cluster_id'</span><span class="p">].</span><span class="n">sample</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">12345</span><span class="p">),</span> <span class="n">metric</span> <span class="o">=</span> <span class="s">'euclidean'</span><span class="p">)</span>
+</code></pre></div></div>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0.8771542608117968
+</code></pre></div></div>
+
+<p>The silhouette score for this set is at 87.7%. This indicates a very good clustering with clusters that are very unrelated to other clusters, and also that points are close to one another within the cluster. Clusters show clear separation but the borders are fuzzier than the previous example.</p>
+
+<h2 id="clustering-hours-of-sun-per-day">Clustering: Hours of Sun Per Day</h2>
+
+<p><img src="/assets/images/baltimore_crime/output_100_0.png" alt="Graph of crime clusters based on tempearture and sun hours" title="Crime data clustered based on the temperature and the number of hours of sun that day" /></p>
+
+<p>Attempts were made to relate weather data to reported crimes. The above crime data is clustered based on latitude, longitude, temperature at the time the crime was committed, and the number of hours of sunlight that Baltimore received that day. The data was plotted in such a way in order to clearly show the cluster groupings. Choosing the dimensions along which the data is viewed is important; as is shown below the clusters do not map as cleanly to latitude and longitude.</p>
+
+<p><img src="/assets/images/baltimore_crime/output_102_0.png" alt="Graph of crime and temperature clusters: latitude vs longitude" title="Crime data clustered based on the temperature and the number of hours of sun that day, plotted geographically" /></p>
+
+<p>Above is a graph of the same data, but laid out by latitude and longitude. As this plot shows, the clusters are not geographically cohesive. Noise data is also more visually represented in this plot, and seems to occur with more frequency within downtown Baltimore.</p>
+
+<p>Practical application of the model would look like this: the temperature and projected hours of sunlight for a given time and day could be plotted and clustered on the first graph (or rather, on the two dimensions represented therein); this would then determine the likely latitudes and longitudes where a crime would be committed given those weather conditions. Because of the number of significant digits given in the latitude and longitude data, likely criminal activity could be predicted to a neighborhood or even to a city block with further tuning. Adding the “Description” variable to the model could additionally allow one to predict the type of crime likely to occur.</p>
+
+<h3 id="modeling-and-visualization-1">Modeling and Visualization</h3>
+
+<p>Modeling and visualization code is very similar to the first example. The minimum points per cluster was set to 10, and the clustering radius was set to 0.3.</p>
+
+<h3 id="verify-results-2">Verify Results</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">silhouette_score</span><span class="p">(</span><span class="n">X3</span><span class="p">.</span><span class="n">sample</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">12345</span><span class="p">),</span> <span class="n">X3_w_labels</span><span class="p">[</span><span class="s">'cluster_id'</span><span class="p">].</span><span class="n">sample</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">12345</span><span class="p">),</span> <span class="n">metric</span> <span class="o">=</span> <span class="s">'euclidean'</span><span class="p">)</span>
+</code></pre></div></div>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0.6322616663393303
+</code></pre></div></div>
+
+<p>Finally, the silhouette score for this set of clusters is around 63.2%. This indicates a decent fit, where most points tend to be accurately classified. Additionally, clusters do not tend to overlap.</p>
+:ET
