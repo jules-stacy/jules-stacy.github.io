@@ -1,5 +1,5 @@
 ---
-title: "Quarterly Distribution Densities 2015-2019"
+title: "Quarterly Distribution Densities"
 categories:
   - graphs
 tags:
