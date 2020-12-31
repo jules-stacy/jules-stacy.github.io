@@ -101,7 +101,7 @@ g = sns.FacetGrid(dfk, row="YearQuarter", hue="YearQuarter", aspect=30, height=.
 
 This section of code sets the facet grid which allows the plots to be plotted one after another in a stack. First, the color palette is set to viridis, which ranges from purple to a bright yellow. Despite there being only 16 groups plotted, the number of colors is set to 21. This is done for readability.
 
-The facet grid is then created using Seaborn's FacetGrid() method. This does not actually plot the data, which is specified using the dataframe and row. The hue is set to iterate on each listed group. The aspect and height variables specify the size of the graph, and the palette is called in at the end.
+The facet grid is then created using Seaborn's FacetGrid() method. This does not actually plot the data, which is specified using the dataframe and row. The hue is set as a dimension which iterates on each listed group. The aspect and height variables specify the size of the graph, and the palette is called in at the end.
 
 ```python
 #densities
@@ -122,4 +122,40 @@ def label(x, color, label):
             ha="left", va="center", transform=ax.transAxes)
 ```
 
-In this section of code, a function is defined in order to label the plot. The function calls for the curve, the color of the curve, and the label to be applied. It then gets the current axis, and adds text to that axis with ax.text. First, the coordinates for the text are specified as x=0, y=0.2. Then the label is read from the list of variables. The horizontal and vertical alignments are specified with ha and va. The `transform=ax.transAxes`
+In this section of code, a function is defined in order to label the plot. The function calls for the curve, the color of the curve, and the label to be applied. It then gets the current axis, and adds text to that axis with ax.text. First, the coordinates for the text are specified as x=0, y=0.2. Then the label is read from the list of variables. The horizontal and vertical alignments are specified with ha and va. `transform=ax.transAxes` causes the coordinates specified earlier to be applied as axes fractions.
+
+```python
+#apply function
+g.map(label, "Values")
+g.set(xlabel="Percent Revenue")
+```
+
+The text plotting function is then applied using the map() method. This method indicates that the labeling function previously specified is to be used. `FacetGrid.map` inherently passes a color object into the function. Because hue was specified as a dimension in an earlier block of code, `map()` will also pass a label into the text function: the current quarter.
+
+The second line in this code section sets the x label.
+
+```python
+#set subplots to overlap
+g.fig.subplots_adjust(hspace=-.4)
+```
+
+This line is what causes the plots to overlap. `hspace` is adjusted with a negative modifier, which removes height from each facet.
+
+
+```python
+#remove axis details
+g.set_titles("")
+g.set(yticks=[])
+g.despine(bottom=True, left=True)
+```
+
+Because this plot is composed of multiple plots on top of each other, it is necessary to remove elements of the figure that would be plotted in excess. This includes the title, the y-ticks, and the spines (which normally denote the boundaries of the data area).
+
+```python
+plt.annotate('New Revenue by Quarter of First Ad',
+            xy=(0, 0),  xycoords='axes fraction', fontsize=14,
+            xytext=(.44, 10), textcoords='axes fraction',
+            horizontalalignment='left', verticalalignment='top', color='black')
+```
+
+Since all titles were set to an empty value in the section above, it is necessary to annotate the plot in order to add a title. `xytext` specifies the coordinates of the text, `textcoords` makes it so that the coordinates specify fractions of the axes, the fontsize and color are set, and vertical and horizontal alignment are specified (top left corner of the text box).
