@@ -122,4 +122,4 @@ def label(x, color, label):
             ha="left", va="center", transform=ax.transAxes)
 ```
 
-In this section of code, a function is defined in order to label the plot. The function calls for the curve, the color of the curve, and the label to be applied. It then gets the current axis, and adds text to that axis with ax.text. First, the coordinates for the text are specified as x=0, y=0.2. Then the label is read from the list of variables. The horizontal and vertical alignments are specified with ha and va. The 'transform=ax.transAxes'
+In this section of code, a function is defined in order to label the plot. The function calls for the curve, the color of the curve, and the label to be applied. It then gets the current axis, and adds text to that axis with ax.text. First, the coordinates for the text are specified as x=0, y=0.2. Then the label is read from the list of variables. The horizontal and vertical alignments are specified with ha and va. The `transform=ax.transAxes`
