@@ -21,9 +21,15 @@ I will give details about the graph and then as usual I will discuss the code us
 
 ## Quarterly Revenue Distribution Density
 
-The data for this graph was given to me as part of a class assignment so I do not have a source for it. The data is available <a id="raw-url" href="/assets/images/2-30-20-graphs/case_study_3_-_new_ad_revenue.xlsx">here</a>.
- 
-There are clear increases in salary amount at years 10 and 20, and the graph is designed in such a way that it highlights these salary increases.
+The data for this graph was given to me as part of a class assignment so I do not have a source for it. The data is available <a id="raw-url" href="/assets/images/2-30-20-graphs/case_study_3_-_new_ad_revenue.xlsx">here</a>. Note that the data is in an unusual, triangle-shaped format; I first had to change it to a tidy format using pd.melt().
+
+The graph is inspired by a Seaborn example which I thought was beautiful and wanted to re-create. Note that the lower sections of the plot are drawn over sections higher on the page.
+
+This data was collected from clients who were utilizing a new advertising tool in order to track the revenue from that tool, as measured in percentage of total client revenue. It is not known how many clients there are, and the dataset is intentionally vague. 
+
+On the left are quarters of each year from the beginning of 2015 to the end of 2018. These groups represent the first quarter that an ad was created using the new tool. The x-axis, percent revenue, is a measurement of clients' percentage of revenue generated from the new advertising tool.
+
+The dataset indicates that new clients were added as the data grows more recent, which lends to the fact that the dataset is triangle-shaped; there is simply more data for older clients. Thus, you can see the distribution widen from the bottom to the top of the page.
 
 ## Code Breakdown
 
@@ -31,133 +37,89 @@ There are clear increases in salary amount at years 10 and 20, and the graph is 
 ```python
 import pandas as pd
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
-from matplotlib.ticker import MultipleLocator
 ```
 
 #### Code Chunk
-```python
-#Initialize graph
-sns.set(font_scale=1)
-fig, ax = plt.subplots(figsize=(20,10))
-sns.boxplot(x="TotalWorkingYears", y="MonthlyIncome", data=df)
-
-#adjust major and minor tick marks on the x axis
-ax.xaxis.set_major_locator(MultipleLocator(10))
-ax.tick_params(axis='x', which='minor', direction='out')
-ax.xaxis.set_minor_locator(MultipleLocator(1))
-
-#put dividing lines
-plt.plot([8.5, 8.5], [0, 23000], lw=1, color='grey', linestyle=":")
-plt.plot([20.5, 20.5], [0, 23000], lw=1, color='grey', linestyle=":")
-
-#add text to groups
-ax.annotate('0-9 Years', 
-            xy=(3, 1),  xycoords='data', fontsize=14,
-            xytext=(.09, .55), textcoords='axes fraction',
-            horizontalalignment='left', verticalalignment='top', color='grey'
-            )
-ax.annotate('10-20 Years', 
-            xy=(3, 1),  xycoords='data', fontsize=14,
-            xytext=(.35, .87), textcoords='axes fraction',
-            horizontalalignment='left', verticalalignment='top', color='grey'
-            )
-ax.annotate('21+ Years', 
-            xy=(3, 1),  xycoords='data', fontsize=14,
-            xytext=(.75, .95), textcoords='axes fraction',
-            horizontalalignment='left', verticalalignment='top', color='grey'
-            )
-#get rid of unnecessary labels
-ax.set(xlabel="", ylabel='')
-ax.get_xaxis().set_visible(False)
-
-#set title
-plt.title("Monthly Salary vs. Career Length", fontdict ={'fontsize':18})
-```
-
-Above is the entire chunk. Below I will explain each section.
 
 ```python
-#Initialize graph
-sns.set(font_scale=1)
-fig, ax = plt.subplots(figsize=(20,10))
-sns.boxplot(x="TotalWorkingYears", y="MonthlyIncome", data=df)
+dfk=df.loc[df["YearQuarter"] != "2019Q1"]
+#Seaborn Ridge Plot
+sns.set_theme(style="white", rc={"axes.facecolor": (0, 0, 0, 0)})
+
+#FacetGrid Object
+pal = sns.color_palette("viridis", 21)
+g = sns.FacetGrid(dfk, row="YearQuarter", hue="YearQuarter", aspect=30, height=.5, palette=pal)
+
+#densities
+g.map(sns.kdeplot, "Values",
+      bw_adjust=.5, clip_on=False,
+      fill=True, alpha=1, linewidth=1)
+g.map(sns.kdeplot, "Values", clip_on=False, color="w", lw=0.5, bw_adjust=.5)
+g.map(plt.axhline, y=0, lw=2, clip_on=False)
+
+#function to label plot
+def label(x, color, label):
+    ax = plt.gca()
+    ax.text(0, .2, label, fontweight="bold", color=color,
+            ha="left", va="center", transform=ax.transAxes)
+#apply function
+g.map(label, "Values")
+g.set(xlabel="Percent Revenue")
+
+#set subplots to overlap
+g.fig.subplots_adjust(hspace=-.25)
+
+#remove axis details
+g.set_titles("")
+g.set(yticks=[])
+g.despine(bottom=True, left=True)
+
+plt.annotate('New Revenue by Quarter of First Ad',
+            xy=(0, 0),  xycoords='axes fraction', fontsize=14,
+            xytext=(.44, 12.2), textcoords='axes fraction',
+            horizontalalignment='left', verticalalignment='top', color='black')
 ```
 
-This portion initializes the graph. Seaborn is first called to set the font scale to 1; as-is it does nothing to the graph but changing it to other values adjusts the size of the x-axis labels.
-
-The figure and axis objects are created with plt.subplots, and the figure size is specified. Finally, a boxplot is created using seaborn, with x and y axes specified.
+#### Section Breakdown
 
 ```python
-#adjust major and minor tick marks on the x axis
-ax.xaxis.set_major_locator(MultipleLocator(10))
-ax.tick_params(axis='x', which='minor', direction='out')
-ax.xaxis.set_minor_locator(MultipleLocator(1))
+dfk=df.loc[df["YearQuarter"] != "2019Q1"]
+#Seaborn Ridge Plot
+sns.set_theme(style="white", rc={"axes.facecolor": (0, 0, 0, 0)})
 ```
 
-This section makes adjustments to the major and minor tick marks. You may notice that there is no x-axis on this graph; it is removed at a later step. I frequently re-use code in my graphs and this section consistently adjusts x-axis parameters, so I will explain it.
-
-Each line modifies the x-axis on the ax object that was created in the section above. The set_major_locator and set_minor_locator methods detect where the tick marks should be located on the graph, and also specify tick spacing at 10 for major ticks and 1 for minor ticks.
-
-The tick_params line makes adjustments for the direction that the tick marks face on the graph (if there were an x-axis shown). In this case the minor tick marks are set to point outwards from the figure.
+This first section of code sets the data to be used by the graph as well as the seaborn theme. First, a new dataframe is created from the original dataframe, minus 2019Q1. This is done because 2019Q1 has a single entry, and the plotting function cannot handle it. The facecolor parameter is set to (0,0,0,0); this specifies the RGB values and the alpha value. Because the alpha is set to zero, the facecolor is transparent.
 
 ```python
-#put dividing lines
-plt.plot([8.5, 8.5], [0, 23000], lw=1, color='grey', linestyle=":")
-plt.plot([20.5, 20.5], [0, 23000], lw=1, color='grey', linestyle=":")
+#FacetGrid Object
+pal = sns.color_palette("viridis", 21)
+g = sns.FacetGrid(dfk, row="YearQuarter", hue="YearQuarter", aspect=30, height=.5, palette=pal)
 ```
 
-This section of code draws the grey dotted lines between each group. These lines serve to break up the portions of the graph so that it is immediately visible to the viewer where the salary breaks occur.
+This section of code sets the facet grid which allows the plots to be plotted one after another in a stack. First, the color palette is set to viridis, which ranges from purple to a bright yellow. Despite there being only 16 groups plotted, the number of colors is set to 21. This is done for readability.
 
-The pyplot.plot method is called, and then there are some numbers. These numbers specify the coordinates of the endpoints of each line on the plot: the first two numbers are x-axis coordinates and the final two numbers are y-axis coordinates; in this case the lines are drawn after 8 years and after 20 years (the extra 0.5 is added to draw the line between boxes rather than on top of them).
-
-Other parameters are specified in this section: the color of the lines is set to grey and the lines are dotted with ":".
+The facet grid is then created using Seaborn's FacetGrid() method. This does not actually plot the data, which is specified using the dataframe and row. The hue is set to iterate on each listed group. The aspect and height variables specify the size of the graph, and the palette is called in at the end.
 
 ```python
-#add text to groups
-ax.annotate('0-8 Years', 
-            xy=(3, 1),  xycoords='data', fontsize=14,
-            xytext=(.09, .55), textcoords='axes fraction',
-            horizontalalignment='left', verticalalignment='top', color='grey'
-            )
-ax.annotate('9-20 Years', 
-            xy=(3, 1),  xycoords='data', fontsize=14,
-            xytext=(.35, .87), textcoords='axes fraction',
-            horizontalalignment='left', verticalalignment='top', color='grey'
-            )
-ax.annotate('21+ Years', 
-            xy=(3, 1),  xycoords='data', fontsize=14,
-            xytext=(.75, .95), textcoords='axes fraction',
-            horizontalalignment='left', verticalalignment='top', color='grey'
-            )
-
+#densities
+g.map(sns.kdeplot, "Values", bw_adjust=.5, clip_on=False, fill=True, alpha=1, linewidth=1)
+g.map(sns.kdeplot, "Values", clip_on=False, color="w", lw=0.5, bw_adjust=.5)
+g.map(plt.axhline, y=0, lw=2, clip_on=False)
 ```
 
-This section adds the labels for each group.
+In this section of code, the data is plotted. Seaborn's kdeplot() method is mapped to the facet grid twice. The first instance fills the curves with a solid color, and the second instance outlines the curves with a white border. The bw_adjust parameter controlS curve smoothing. And specifying clip_on=False allows the data to be plotted beyond the extent of the axes. It is worth noting that setting this to True does not prevent the curves from overlapping one another.
 
-The annotate method is called on the axis object, which relates coordinate positions to values on the axis. The text to be drawn is specified.
-
-After this, an xy variable is specified at (3,1). Annotate has a built-in feature to draw an arrow alongside the text, and this variable specifies the endpoint of said arrow. This part of the code is necessary, but the portion that draws the arrow is removed.
-
-The font size is then set, followed by the text coordinate values (x followed by y). After that, textcoords specifies how the annotate function should read the coordinate values; in this case, as a fraction of the axes. The text was positioned manually through trial and error.
-
-Finally, the horizontal alignment, vertical alignment, and color are specified. The alignment values help determine the positioning of the text; for each text box in this instance, the coordinates specify the location of the top left corner.
-
+Lastly, a horizontal line is plotted along the axis for each curve at y=0 and with line width 2.
 
 ```python
-#get rid of unnecessary labels
-ax.set(xlabel="", ylabel='')
-ax.get_xaxis().set_visible(False)
+#function to label plot
+def label(x, color, label):
+    ax = plt.gca()
+    ax.text(0, .2, label, fontweight="bold", color=color,
+            ha="left", va="center", transform=ax.transAxes)
 ```
 
-This section of code removes the axis labels and the x axis. This was done because all the information needed to read the graph is currently present in the title, the values on the y-axis, and the group labels.
-
-The set method sets the xlabel and ylabel to blank values. For the second line, ax.get_xaxis() grabs the x axis as an object, and then .set_visible() sets the visibility to false.
-
-```python
-#set title
-plt.title("Monthly Salary vs. Career Length", fontdict ={'fontsize':18})
-```
-
-The final line in the code chunk sets the title for the graph.
+In this section of code, a function is defined in order to label the plot. The function calls for the curve, the color of the curve, and the label to be applied. It then gets the current axis, and adds text to that axis with ax.text. First, the coordinates for the text are specified as x=0, y=0.2. Then the label is read from the list of variables. The horizontal and vertical alignments are specified with ha and va. The 'transform=ax.transAxes'
