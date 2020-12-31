@@ -23,7 +23,7 @@ I will give details about the graph and then as usual I will discuss the code us
 
 The data for this graph was taken from the IBM HR Analytics Employee Attrition & Performance dataset located <a id="raw-url" href="https://www.kaggle.com/pavansubhasht/ibm-hr-analytics-attrition-dataset">here</a>.
  
-There are clear increases in salary amount at years 9 and 20, and the graph is designed in such a way that it highlights these salary increases.
+This graph shows a box plot distribution of salary for cohorts specified by years of work experience. There are clear increases in salary amount at years 9 and 20, and the graph is designed in such a way that it visually highlights these salary increases.
 
 ## Code Breakdown
 
