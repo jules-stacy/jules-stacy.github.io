@@ -15,8 +15,3 @@ Bachelor's in Petroleum Engineering, Texas A&M University, 2013
 
 [jules.stacy07@gmail.com](mailto:jules.stacy07@gmail.com)
 
-### Donate
-
-Like what you see and want to contribute? Here's my Bitcoin wallet:
-![1G8zKW7A9jBNoBAicFaSCBMXkLnyEB75fw]({{ https://jules-stacy.github.io/ }}/assets/images/bitcoin_private_key.png "private key QR code")
-1G8zKW7A9jBNoBAicFaSCBMXkLnyEB75fw

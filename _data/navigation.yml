@@ -8,8 +8,8 @@ main:
     url: /graphs/
   - title: "About"
     url: /about/
-  # - title: "Sample Posts"
-  #   url: /year-archive/
+  - title: "Donate"
+    url: /donate/
   # - title: "Sample Collections"
   #   url: /collection-archive/
   # - title: "Sitemap"
