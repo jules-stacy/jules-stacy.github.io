@@ -9,7 +9,7 @@ Like what you see and want to donate?
 
 ### Paypal:
 
-![paypal QR]({{ https://jules-stacy.github.io/ }}/assets/images/QR-Codes/bitcoin_private_key.png "paypal QR code")
+![paypal QR]({{ https://jules-stacy.github.io/ }}/assets/images/QR-Codes/paypal_wallet.png "paypal QR code")
 
 [paypal.me/julesstacy](https://www.paypal.com/paypalme/julesstacy/5)
 
