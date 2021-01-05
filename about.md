@@ -5,6 +5,8 @@ permalink: /about/
 author_profile: true
 ---
 
+![Me]({{ https://jules-stacy.github.io/ }}/assets/images/people/selfie.png "That's me!")
+
 ### More Information
 
 Master's in Data Science, Southern Methodist University, 2021 <br>
